@@ -1,0 +1,56 @@
+# Backup files
+*.bak
+*.tmp
+*.swp
+*.swo
+*.pid
+*.log
+.DS_Store
+Thumbs.db
+
+# Cache directories
+**/.cache/
+**/cache/
+**/Cache/
+**/logs/
+**/session/
+**/sessions/
+
+# Database files
+**/*.sqlite
+**/*.sqlite3
+**/*.db
+
+# App state directories
+**/workspaceStorage/
+**/globalStorage/
+**/blob_storage/
+**/GPUCache/
+**/CachedData/
+**/History*
+**/Backups/
+
+# Secret and credential files
+**/token*
+**/auth*
+**/cookie*
+**/credential*
+**/machine-id*
+
+# Zed specific
+packages/editor-zed/.config/zed/logs/
+packages/editor-zed/.config/zed/workspaceStorage/
+packages/editor-zed/.config/zed/*.bak*
+packages/editor-zed/.config/zed/*_backup.json
+
+# VS Code specific
+packages/editor-vscode/.config/Code/User/workspaceStorage/
+packages/editor-vscode/.config/Code/User/globalStorage/
+packages/editor-vscode/.config/Code/User/History/
+
+# btop log
+packages/tools-btop/.config/btop/btop.log
+
+# Superrice specific
+packages/tools-superrice/bin/*.log
+packages/tools-superrice/bin/*.tmp
