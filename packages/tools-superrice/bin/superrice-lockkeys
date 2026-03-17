@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-status}"
+
+read_led_mask() {
+  xset q 2>/dev/null | awk '/LED mask:/ {print $NF; exit}'
+}
+
+read_states() {
+  local mask_hex mask_dec caps num
+  mask_hex="$(read_led_mask || true)"
+  mask_hex="${mask_hex#0x}"
+  [ -n "$mask_hex" ] || mask_hex="0"
+  mask_dec=$((16#$mask_hex))
+  caps=$(( (mask_dec & 1) != 0 ? 1 : 0 ))
+  num=$(( (mask_dec & 2) != 0 ? 1 : 0 ))
+  printf '%s %s\n' "$caps" "$num"
+}
+
+notify_key() {
+  local key="$1"
+  local state="$2"
+  local title="${key} Lock"
+  local body="OFF"
+  [ "$state" = "1" ] && body="ON"
+
+  if command -v dunstify >/dev/null 2>&1; then
+    dunstify \
+      -a "SuperRice" \
+      -u low \
+      -t 1100 \
+      -h "string:x-dunst-stack-tag:superrice-${key,,}-lock" \
+      "$title" "$body" >/dev/null 2>&1 || true
+  else
+    notify-send "$title" "$body" >/dev/null 2>&1 || true
+  fi
+}
+
+status_line() {
+  local caps num out=""
+  read -r caps num < <(read_states)
+  [ "$caps" = "1" ] && out+="⇪ "
+  [ "$num" = "1" ] && out+="󰎠 "
+  printf '%s\n' "${out% }"
+}
+
+run_daemon() {
+  local prev_caps="" prev_num="" caps num
+  while :; do
+    read -r caps num < <(read_states)
+    if [ -n "$prev_caps" ] && [ "$caps" != "$prev_caps" ]; then
+      notify_key "Caps" "$caps"
+    fi
+    if [ -n "$prev_num" ] && [ "$num" != "$prev_num" ]; then
+      notify_key "Num" "$num"
+    fi
+    prev_caps="$caps"
+    prev_num="$num"
+    sleep 0.22
+  done
+}
+
+case "$cmd" in
+  status)
+    status_line
+    ;;
+  daemon)
+    run_daemon
+    ;;
+  *)
+    echo "Usage: superrice-lockkeys {status|daemon}" >&2
+    exit 1
+    ;;
+esac

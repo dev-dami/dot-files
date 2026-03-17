@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command -v i3-msg >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+active_color="#7f92ad"
+pass_color="#a5b6cf"
+idle_color="#586475"
+
+active_num() {
+  i3-msg -t get_workspaces 2>/dev/null \
+    | jq -r '([.[] | select(.focused == true) | .num][0] // 1)'
+}
+
+render() {
+  local active="$1"
+  local passing="${2:-}"
+  local out="" i dot color
+
+  for i in 1 2 3 4 5 6 7 8 9; do
+    dot="·"
+    color="$idle_color"
+    if [[ "$i" == "$active" ]]; then
+      dot="●"
+      color="$active_color"
+    elif [[ -n "$passing" && "$i" == "$passing" ]]; then
+      dot="◉"
+      color="$pass_color"
+    fi
+
+    out+="%{A1:i3-msg workspace number ${i} >/dev/null:}%{F${color}} ${dot} %{F-}%{A}"
+  done
+
+  printf '%s\n' "$out"
+}
+
+animate() {
+  local from="$1"
+  local to="$2"
+  local pos dir next
+
+  if [[ "$from" == "$to" ]]; then
+    render "$to"
+    return
+  fi
+
+  if (( to > from )); then
+    dir=1
+  else
+    dir=-1
+  fi
+
+  pos="$from"
+  while (( pos != to )); do
+    next=$((pos + dir))
+    render "$next" "$pos"
+    sleep 0.04
+    pos="$next"
+  done
+  render "$to"
+}
+
+last="$(active_num)"
+render "$last"
+
+i3-msg -t subscribe -m '[ "workspace" ]' 2>/dev/null | while read -r _; do
+  current="$(active_num)"
+  animate "$last" "$current"
+  last="$current"
+done

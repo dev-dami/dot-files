@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-}"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+with_wpctl() {
+  case "$cmd" in
+    up) wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ ;;
+    down) wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- ;;
+    mute) wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+    micmute) wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle ;;
+    *) exit 1 ;;
+  esac
+}
+
+with_pactl() {
+  case "$cmd" in
+    up) pactl set-sink-volume @DEFAULT_SINK@ +5% ;;
+    down) pactl set-sink-volume @DEFAULT_SINK@ -5% ;;
+    mute) pactl set-sink-mute @DEFAULT_SINK@ toggle ;;
+    micmute) pactl set-source-mute @DEFAULT_SOURCE@ toggle ;;
+    *) exit 1 ;;
+  esac
+}
+
+audio_state() {
+  if have wpctl; then
+    local out vol muted pct
+    out="$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null || true)"
+    vol="$(awk '{print $2}' <<<"$out")"
+    muted="0"
+    grep -q "\[MUTED\]" <<<"$out" && muted="1"
+    pct="$(awk -v v="${vol:-0}" 'BEGIN { printf "%d", (v * 100) + 0.5 }')"
+    printf '%s %s\n' "${pct:-0}" "$muted"
+    return 0
+  fi
+
+  if have pactl; then
+    local sink mute_line vol_line pct muted
+    sink="$(pactl info 2>/dev/null | awk -F': ' '/Default Sink/ {print $2; exit}')"
+    [ -n "$sink" ] || { printf '0 0\n'; return 0; }
+    vol_line="$(pactl get-sink-volume "$sink" 2>/dev/null | head -n1)"
+    mute_line="$(pactl get-sink-mute "$sink" 2>/dev/null | head -n1)"
+    pct="$(sed -nE 's/.* ([0-9]+)%.*/\1/p' <<<"$vol_line" | head -n1)"
+    muted="0"
+    grep -qi "yes" <<<"$mute_line" && muted="1"
+    printf '%s %s\n' "${pct:-0}" "$muted"
+    return 0
+  fi
+
+  printf '0 0\n'
+}
+
+notify_volume() {
+  local pct muted icon title body
+  read -r pct muted < <(audio_state)
+
+  if [ "$muted" = "1" ]; then
+    icon="󰖁"
+    title="Audio muted"
+    body="Muted"
+  else
+    if [ "$pct" -lt 34 ]; then
+      icon=""
+    elif [ "$pct" -lt 67 ]; then
+      icon=""
+    else
+      icon=""
+    fi
+    title="Volume ${pct}%"
+    body="${icon} ${pct}%"
+  fi
+
+  if have dunstify; then
+    dunstify \
+      -a "SuperRice" \
+      -u low \
+      -t 900 \
+      -h string:x-dunst-stack-tag:superrice-volume \
+      -h int:value:"$pct" \
+      "$title" "$body" >/dev/null 2>&1 || true
+  else
+    notify-send "$title" "$body" >/dev/null 2>&1 || true
+  fi
+}
+
+case "$cmd" in
+  up|down|mute|micmute)
+    if have wpctl; then
+      with_wpctl
+    elif have pactl; then
+      with_pactl
+    else
+      notify-send "Audio control unavailable" "Install pipewire-pulse or pulseaudio utilities"
+      exit 1
+    fi
+    [ "$cmd" = "micmute" ] || notify_volume
+    ;;
+  *)
+    echo "Usage: superrice-audio {up|down|mute|micmute}" >&2
+    exit 1
+    ;;
+esac

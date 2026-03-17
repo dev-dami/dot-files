@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+need_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    notify-send "Missing dependency" "$1 is not installed"
+    echo "Missing dependency: $1" >&2
+    exit 1
+  }
+}
+
+need_cmd i3-msg
+need_cmd jq
+need_cmd i3-resurrect
+
+current_ws() {
+  i3-msg -t get_workspaces | jq -r '.[] | select(.focused == true) | if .num > 0 then (.num|tostring) else .name end'
+}
+
+all_ws() {
+  i3-msg -t get_workspaces | jq -r '.[] | if .num > 0 then (.num|tostring) else .name end' | sort -u
+}
+
+save_one() {
+  local ws="$1"
+  i3-resurrect save -w "$ws" --swallow class,instance,title >/dev/null 2>&1 || return 1
+}
+
+restore_one() {
+  local ws="$1"
+  i3-resurrect restore -w "$ws" >/dev/null 2>&1 || return 1
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  save)
+    ws="$(current_ws)"
+    [ -n "$ws" ] || exit 1
+    save_one "$ws" && notify-send "i3-resurrect" "Saved workspace $ws"
+    ;;
+  restore)
+    ws="$(current_ws)"
+    [ -n "$ws" ] || exit 1
+    restore_one "$ws" && notify-send "i3-resurrect" "Restored workspace $ws"
+    ;;
+  save-all)
+    while IFS= read -r ws; do
+      [ -n "$ws" ] && save_one "$ws" || true
+    done < <(all_ws)
+    notify-send "i3-resurrect" "Saved all active workspaces"
+    ;;
+  restore-all)
+    while IFS= read -r ws; do
+      [ -n "$ws" ] && restore_one "$ws" || true
+    done < <(all_ws)
+    notify-send "i3-resurrect" "Restore attempted for all active workspaces"
+    ;;
+  *)
+    echo "Usage: superrice-layout {save|restore|save-all|restore-all}" >&2
+    exit 1
+    ;;
+esac

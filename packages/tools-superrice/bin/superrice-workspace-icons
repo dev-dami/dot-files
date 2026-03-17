@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command -v i3-msg >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || exit 0
+
+icon_for_num() {
+  case "$1" in
+    1) echo "" ;;
+    2) echo "" ;;
+    3) echo "" ;;
+    4) echo "" ;;
+    5) echo "" ;;
+    6) echo "" ;;
+    7) echo "" ;;
+    8) echo "" ;;
+    9) echo "" ;;
+    *) echo "" ;;
+  esac
+}
+
+icon_for_class() {
+  local c
+  c="$(tr '[:upper:]' '[:lower:]' <<<"${1:-}")"
+  case "$c" in
+    kitty|alacritty|wezterm|foot|terminator) echo "" ;;
+    firefox|zen|zen-browser|google-chrome|chromium|brave-browser) echo "" ;;
+    code|code-oss|codium|nvim|emacs|sublime_text|jetbrains*) echo "" ;;
+    thunar|nemo|nautilus|pcmanfm) echo "" ;;
+    spotify|vlc|mpv|rhythmbox|strawberry) echo "" ;;
+    discord|slack|telegramdesktop|signal|vesktop|whatsapp-for-linux) echo "" ;;
+    steam|lutris|heroic|prismlauncher) echo "" ;;
+    gimp|krita|inkscape|blender) echo "" ;;
+    obsidian) echo "󱞁" ;;
+    *) echo "" ;;
+  esac
+}
+
+sync_once() {
+  local tree rows row num name class icon target
+  tree="$(i3-msg -t get_tree 2>/dev/null || true)"
+  [ -n "$tree" ] || return 0
+
+  mapfile -t rows < <(
+    jq -r '
+      def walk:
+        . as $n
+        | [$n]
+          + (((($n.nodes // []) | map(walk) | add) // []))
+          + (((($n.floating_nodes // []) | map(walk) | add) // []));
+
+      [walk[] | select(.type == "workspace" and .num > 0)]
+      | sort_by(.num)
+      | .[] as $ws
+      | ([$ws | walk[] | select(.window_properties.class? != null)]) as $wins
+      | (($wins | map(select(.focused == true) | .window_properties.class) | .[0])
+         // ($wins | map(.window_properties.class) | .[0])
+         // "") as $class
+      | "\($ws.num)\t\($ws.name)\t\($class)"
+    ' <<<"$tree"
+  )
+
+  for row in "${rows[@]}"; do
+    IFS=$'\t' read -r num name class <<<"$row"
+    [ -n "${num:-}" ] || continue
+
+    icon="$(icon_for_class "${class:-}")"
+    [ -n "$icon" ] || icon="$(icon_for_num "$num")"
+    target="${num}:${icon}"
+
+    if [ "$name" != "$target" ]; then
+      i3-msg --quiet "rename workspace \"$name\" to \"$target\"" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
+while :; do
+  sync_once
+  sleep 2
+done

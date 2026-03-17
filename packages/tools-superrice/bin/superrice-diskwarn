@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage="$(df -P / | awk 'NR==2 {gsub(/%/, "", $5); print int($5)}')"
+usage="${usage:-0}"
+threshold=85
+
+case "${1:-show}" in
+  check)
+    if [ "$usage" -ge "$threshold" ]; then
+      exit 0
+    fi
+    exit 1
+    ;;
+  show)
+    printf '󰋊 %s%%\n' "$usage"
+    ;;
+  *)
+    echo "Usage: superrice-diskwarn {check|show}" >&2
+    exit 1
+    ;;
+esac

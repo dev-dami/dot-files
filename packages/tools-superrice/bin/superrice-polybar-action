@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-help}"
+
+rofi_cmd=(rofi -show drun -theme "$HOME/.config/rofi/theme.rasi")
+
+notify_missing() {
+  local name="$1"
+  notify-send "Missing tool" "$name is not installed"
+}
+
+case "$cmd" in
+  launcher)
+    "${rofi_cmd[@]}"
+    ;;
+  clipboard)
+    if command -v copyq >/dev/null 2>&1; then
+      copyq --start-server >/dev/null 2>&1 || true
+      copyq show
+    elif command -v clipmenu >/dev/null 2>&1; then
+      clipmenu -i
+    else
+      notify_missing "copyq/clipmenu"
+    fi
+    ;;
+  clipboard-menu)
+    if command -v copyq >/dev/null 2>&1; then
+      copyq --start-server >/dev/null 2>&1 || true
+      copyq menu
+    else
+      notify_missing "copyq"
+    fi
+    ;;
+  calendar)
+    if command -v gsimplecal >/dev/null 2>&1; then
+      gsimplecal
+    else
+      notify_missing "gsimplecal"
+    fi
+    ;;
+  panel|audio)
+    if command -v pavucontrol >/dev/null 2>&1; then
+      pavucontrol
+    else
+      notify_missing "pavucontrol"
+    fi
+    ;;
+  network)
+    if command -v nm-connection-editor >/dev/null 2>&1; then
+      nm-connection-editor
+    else
+      notify_missing "nm-connection-editor"
+    fi
+    ;;
+  network-tui)
+    if command -v kitty >/dev/null 2>&1; then
+      kitty --title network-tui sh -lc 'nmtui || nmcli device status; printf "\nPress any key to close..."; read -r -n 1 _'
+    else
+      notify_missing "kitty"
+    fi
+    ;;
+  bluetooth)
+    if command -v blueman-manager >/dev/null 2>&1; then
+      blueman-manager
+    else
+      notify_missing "blueman-manager"
+    fi
+    ;;
+  monitor)
+    if command -v kitty >/dev/null 2>&1; then
+      kitty --title htop sh -lc 'htop'
+    else
+      notify_missing "kitty"
+    fi
+    ;;
+  agenda)
+    if command -v kitty >/dev/null 2>&1; then
+      kitty --title calcurse sh -lc 'calcurse'
+    else
+      notify_missing "kitty"
+    fi
+    ;;
+  khal)
+    if command -v kitty >/dev/null 2>&1; then
+      kitty --title khal sh -lc 'khal calendar || calcurse'
+    else
+      notify_missing "kitty"
+    fi
+    ;;
+  help|*)
+    echo "Usage: superrice-polybar-action {launcher|clipboard|clipboard-menu|calendar|panel|audio|network|network-tui|bluetooth|monitor|agenda|khal}" >&2
+    ;;
+esac

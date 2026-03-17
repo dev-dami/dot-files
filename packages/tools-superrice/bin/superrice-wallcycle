@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SRC_DIR="${SRC_DIR:-$HOME/Downloads}"
+BASE_DIR="${BASE_DIR:-$HOME/.local/share/wallpapers/superrice-dynamic}"
+POOL_DIR="$BASE_DIR/pool"
+LIST_FILE="$BASE_DIR/.wallpapers.list"
+IDX_FILE="$BASE_DIR/.current_index"
+CUR_LINK="$BASE_DIR/current"
+CURATED_LINK="$HOME/.local/share/wallpapers/superrice/current"
+RECENT_MINUTES_DEFAULT=60
+MIN_WIDTH="${MIN_WIDTH:-1200}"
+MIN_HEIGHT="${MIN_HEIGHT:-700}"
+NAME_REGEX="${NAME_REGEX:-wallhaven-|wallpapercc|wallpapercave}"
+
+mkdir -p "$POOL_DIR"
+
+find_candidates() {
+  local recent_mins="${1:-}"
+  local -a recent_arg=()
+  if [ -n "$recent_mins" ]; then
+    recent_arg=(-mmin "-$recent_mins")
+  fi
+
+  find "$SRC_DIR" \
+    \( -type d \( -name node_modules -o -name .git -o -name .cache -o -name dist -o -name build -o -name coverage -o -name target \) -prune \) -o \
+    \( -type f "${recent_arg[@]}" \
+      \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.bmp' -o -iname '*.tif' -o -iname '*.tiff' \) \
+      -print0 \)
+}
+
+is_wallpaper_like() {
+  local src="$1"
+  local name w h size
+
+  name="$(basename "$src" | tr '[:upper:]' '[:lower:]')"
+  if ! printf '%s' "$name" | rg -qi "$NAME_REGEX"; then
+    return 1
+  fi
+
+  case "$name" in
+    *icon*|*logo*|*sprite*|*avatar*|*thumb*|*thumbnail*)
+      return 1
+      ;;
+  esac
+
+  if command -v identify >/dev/null 2>&1; then
+    read -r w h < <(identify -format '%w %h' "$src" 2>/dev/null || echo "0 0")
+    if [ "${w:-0}" -lt "$MIN_WIDTH" ] || [ "${h:-0}" -lt "$MIN_HEIGHT" ]; then
+      return 1
+    fi
+  else
+    size="$(stat -Lc '%s' "$src" 2>/dev/null || echo 0)"
+    if [ "${size:-0}" -lt 350000 ]; then
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
+pool_add() {
+  local src="$1"
+  local base id link name ext stem safe
+  base="$(basename "$src")"
+  name="$base"
+  ext="${name##*.}"
+  stem="${name%.*}"
+  safe="$(printf '%s' "$stem" | tr -cs '[:alnum:]_.-' '_' | cut -c1-72)"
+  [ -n "$safe" ] || safe="wallpaper"
+  id="$(printf '%s' "$src" | md5sum | awk '{print substr($1,1,10)}')"
+  link="$POOL_DIR/${id}_${safe}.${ext,,}"
+  ln -sfn "$src" "$link"
+  printf '%s\n' "$link" >> "$LIST_FILE"
+}
+
+build_pool() {
+  rm -f "$POOL_DIR"/*
+  : > "$LIST_FILE"
+
+  find_candidates | while IFS= read -r -d '' src; do
+      if is_wallpaper_like "$src"; then
+        pool_add "$src"
+      fi
+    done
+
+  sort -u -o "$LIST_FILE" "$LIST_FILE"
+  if [ ! -s "$LIST_FILE" ]; then
+    echo "No wallpaper-size images found under $SRC_DIR" >&2
+    exit 1
+  fi
+}
+
+build_pool_recent() {
+  local mins="${1:-$RECENT_MINUTES_DEFAULT}"
+  rm -f "$POOL_DIR"/*
+  : > "$LIST_FILE"
+
+  find_candidates "$mins" | while IFS= read -r -d '' src; do
+      if is_wallpaper_like "$src"; then
+        pool_add "$src"
+      fi
+    done
+
+  sort -u -o "$LIST_FILE" "$LIST_FILE"
+  if [ ! -s "$LIST_FILE" ]; then
+    echo "No wallpaper-size images found in last ${mins} minutes under $SRC_DIR" >&2
+    exit 1
+  fi
+}
+
+count_items() {
+  [ -f "$LIST_FILE" ] || return 1
+  wc -l < "$LIST_FILE"
+}
+
+ensure_list() {
+  if ! count_items >/dev/null 2>&1; then
+    build_pool
+  fi
+}
+
+current_index() {
+  local c total
+  total="$(count_items || echo 0)"
+  [ "$total" -gt 0 ] || { echo 1; return; }
+  c=1
+  if [ -f "$IDX_FILE" ]; then
+    c="$(cat "$IDX_FILE" 2>/dev/null || echo 1)"
+  fi
+  [[ "$c" =~ ^[0-9]+$ ]] || c=1
+  if [ "$c" -lt 1 ] || [ "$c" -gt "$total" ]; then
+    c=1
+  fi
+  echo "$c"
+}
+
+set_index() {
+  printf '%s\n' "$1" > "$IDX_FILE"
+}
+
+line_at() {
+  sed -n "${1}p" "$LIST_FILE"
+}
+
+apply_image() {
+  local img="$1"
+  [ -f "$img" ] || { echo "missing image: $img" >&2; exit 1; }
+  ln -sfn "$img" "$CUR_LINK"
+  mkdir -p "$(dirname "$CURATED_LINK")"
+  ln -sfn "$img" "$CURATED_LINK"
+  "$HOME/bin/superrice-set-wallpaper" "$img" || true
+  "$HOME/bin/superrice-wal" "$img" || true
+  notify-send "Wallpaper switched" "$(basename "$img")" >/dev/null 2>&1 || true
+}
+
+cmd="${1:-help}"
+case "$cmd" in
+  sync|init)
+    build_pool
+    set_index 1
+    first="$(line_at 1)"
+    apply_image "$first"
+    echo "synced: $(count_items) images"
+    ;;
+  recent)
+    mins="${2:-$RECENT_MINUTES_DEFAULT}"
+    build_pool_recent "$mins"
+    set_index 1
+    first="$(line_at 1)"
+    apply_image "$first"
+    echo "synced recent: $(count_items) images (last ${mins} min)"
+    ;;
+  largest)
+    build_pool
+    largest=""
+    max_size=0
+    while IFS= read -r p; do
+      [ -f "$p" ] || continue
+      s="$(stat -Lc '%s' "$p" 2>/dev/null || echo 0)"
+      if [ "$s" -gt "$max_size" ]; then
+        max_size="$s"
+        largest="$p"
+      fi
+    done < "$LIST_FILE"
+    [ -n "${largest:-}" ] || { echo "no images" >&2; exit 1; }
+    # update index to largest item in list
+    idx="$(nl -ba "$LIST_FILE" | awk -v p="$largest" '$2==p{print $1; exit}')"
+    [ -n "${idx:-}" ] && set_index "$idx"
+    apply_image "$largest"
+    echo "$largest"
+    ;;
+  next)
+    ensure_list
+    total="$(count_items)"
+    cur="$(current_index)"
+    nxt=$((cur + 1))
+    [ "$nxt" -le "$total" ] || nxt=1
+    set_index "$nxt"
+    apply_image "$(line_at "$nxt")"
+    ;;
+  prev)
+    ensure_list
+    total="$(count_items)"
+    cur="$(current_index)"
+    prv=$((cur - 1))
+    [ "$prv" -ge 1 ] || prv="$total"
+    set_index "$prv"
+    apply_image "$(line_at "$prv")"
+    ;;
+  random)
+    ensure_list
+    total="$(count_items)"
+    idx="$(( (RANDOM % total) + 1 ))"
+    set_index "$idx"
+    apply_image "$(line_at "$idx")"
+    ;;
+  current)
+    ensure_list
+    idx="$(current_index)"
+    echo "$(line_at "$idx")"
+    ;;
+  list)
+    ensure_list
+    cur="$(current_index)"
+    nl -ba "$LIST_FILE" | awk -v c="$cur" '{mark = ($1==c ? "*" : " "); print mark" "$1" "$2}'
+    ;;
+  apply)
+    ensure_list
+    [ $# -ge 2 ] || { echo "Usage: superrice-wallcycle apply <index|path>" >&2; exit 1; }
+    arg="$2"
+    if [[ "$arg" =~ ^[0-9]+$ ]]; then
+      img="$(line_at "$arg")"
+      [ -n "${img:-}" ] || { echo "invalid index: $arg" >&2; exit 1; }
+      set_index "$arg"
+      apply_image "$img"
+    else
+      apply_image "$arg"
+    fi
+    ;;
+  help|*)
+    cat <<'USAGE'
+Usage: superrice-wallcycle {sync|recent|largest|next|prev|random|current|list|apply}
+  sync      Build dynamic wallpaper pool from ~/Downloads and apply first
+            (only wallpaper site names: wallhaven/wallpapercc/wallpapercave)
+  recent    Rebuild pool with only recent images (default: last 60 min)
+            Example: superrice-wallcycle recent 120
+  largest   Pick the largest image from ~/Downloads and apply it now
+  next      Switch to next wallpaper (also updates pywal palette)
+  prev      Switch to previous wallpaper
+  random    Switch to a random wallpaper
+  current   Print current wallpaper path
+  list      List wallpapers in dynamic pool
+  apply N   Apply image by index from list
+  apply P   Apply explicit image path
+USAGE
+    ;;
+esac

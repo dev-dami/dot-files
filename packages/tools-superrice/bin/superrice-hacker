@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+PID_FILE="$CACHE_DIR/hacker.pid"
+SESSION="superrice-hacker"
+mkdir -p "$CACHE_DIR"
+
+have() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+create_session() {
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    return 0
+  fi
+
+tmux new-session -d -s "$SESSION" -n hack "$HOME/bin/superrice-hacker-matrix"
+tmux set-option -t "$SESSION" status off
+tmux set-option -t "$SESSION" mouse on
+tmux set-option -t "$SESSION" pane-border-style "fg=#2e3a4a"
+tmux set-option -t "$SESSION" pane-active-border-style "fg=#7f92ad"
+
+tmux split-window -h -t "$SESSION":0 "$HOME/bin/superrice-hacker-monitor"
+tmux split-window -v -t "$SESSION":0.0 "$HOME/bin/superrice-hacker-boot"
+tmux split-window -v -t "$SESSION":0.1 "$HOME/bin/superrice-hacker-telemetry"
+tmux select-layout -t "$SESSION":0 tiled
+tmux select-pane -t "$SESSION":0.0
+}
+
+start() {
+  if ! have tmux; then
+    notify-send "superrice-hacker" "tmux is required. Install: sudo apt install tmux"
+    echo "tmux not found" >&2
+    exit 1
+  fi
+
+  create_session
+
+  if have kitty; then
+    kitty --class SuperRiceSplash --title superrice-hacker sh -lc "tmux attach -t $SESSION" >/dev/null 2>&1 &
+    echo "$!" > "$PID_FILE"
+  else
+    tmux attach -t "$SESSION"
+  fi
+}
+
+stop() {
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    tmux kill-session -t "$SESSION" >/dev/null 2>&1 || true
+  fi
+  if [ -f "$PID_FILE" ]; then
+    kill "$(cat "$PID_FILE" 2>/dev/null || true)" >/dev/null 2>&1 || true
+    rm -f "$PID_FILE"
+  fi
+}
+
+case "${1:-start}" in
+  start) start ;;
+  stop) stop ;;
+  restart) stop; start ;;
+  *)
+    echo "Usage: superrice-hacker {start|stop|restart}" >&2
+    exit 1
+    ;;
+esac

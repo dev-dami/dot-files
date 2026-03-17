@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-}"
+
+bluetooth_status() {
+  if ! command -v bluetoothctl >/dev/null 2>&1; then
+    echo "󰂲"
+    return
+  fi
+
+  local show powered connected
+  show="$(bluetoothctl show 2>/dev/null || true)"
+  powered="$(awk -F': ' '/Powered:/ {print $2; exit}' <<<"$show")"
+  connected="$(bluetoothctl devices Connected 2>/dev/null | wc -l | tr -d ' ')"
+
+  if [ "${powered:-no}" = "yes" ]; then
+    if [ "${connected:-0}" -gt 0 ]; then
+      echo " ${connected}"
+    else
+      echo ""
+    fi
+  else
+    echo "󰂲"
+  fi
+}
+
+case "$cmd" in
+  bluetooth)
+    bluetooth_status
+    ;;
+  *)
+    echo "Usage: superrice-polybar-status {bluetooth}" >&2
+    exit 1
+    ;;
+esac

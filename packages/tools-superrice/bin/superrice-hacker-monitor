@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+while :; do
+  clear
+  printf '\033[1;35mmonitor\033[0m\n\n'
+  uptime
+  printf '\n'
+  top -b -n1 | sed -n '3,10p'
+  sleep 1
+done

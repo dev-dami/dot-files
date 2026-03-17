@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+ID_FILE="$CACHE_DIR/tips-notification.id"
+mkdir -p "$CACHE_DIR"
+
+dunst_running() {
+  pgrep -x dunst >/dev/null 2>&1
+}
+
+ensure_dunst() {
+  if dunst_running; then
+    return 0
+  fi
+  if command -v dunst >/dev/null 2>&1; then
+    dunst -conf "$HOME/.config/dunst/dunstrc" >/dev/null 2>&1 &
+    sleep 0.12
+  fi
+}
+
+read_id() {
+  [ -f "$ID_FILE" ] || return 1
+  local id
+  id="$(cat "$ID_FILE" 2>/dev/null || true)"
+  [ -n "$id" ] || return 1
+  case "$id" in
+    ''|*[!0-9]*) return 1 ;;
+    *) printf '%s\n' "$id"; return 0 ;;
+  esac
+}
+
+is_running() {
+  local id
+  id="$(read_id 2>/dev/null || true)"
+  [ -n "$id" ] || return 1
+  dunst_running
+}
+
+tips_text() {
+  cat <<'TXT'
+Mod+Enter: terminal
+Mod+D: rofi launcher
+Mod+Shift+Q: close window
+Mod+1..9: workspaces
+Mod+Shift+1..9: move to workspace
+Mod+R: resize mode
+Mod+M: move mode
+Mod+Ctrl+Arrows: fast resize current window
+Mod+Shift+Return: launch scratchpad terminal
+Mod+`: show scratchpad terminal
+Mod+Shift+N: launch scratchpad notes
+Mod+N: show scratchpad notes
+Print: area screenshot (HD PNG)
+Shift+Print: full screenshot (HD PNG)
+Ctrl+Print: open today's screenshot folder
+XF86Audio keys: volume/mute
+XF86Brightness keys: brightness up/down
+Mod+Ctrl+P: open audio panel
+Mod+Ctrl+C: open calendar
+Mod+Ctrl+V: toggle Cava visualizer
+Mod+Shift+V: clipboard menu
+Mod+Shift+.: next wallpaper
+Mod+Shift+,: previous wallpaper
+Mod+Shift+/: random wallpaper
+Mod+Shift+X: lock screen
+Mod+Shift+A: open calcurse
+Mod+Shift+G: open gsimplecal
+Mod+Shift+B: open bluetooth manager
+Mod+Shift+P: apply pywal colors
+Mod+Shift+R: restart i3
+Mod+Shift+E: session menu (lock/suspend/logout/reboot/shutdown)
+Mod+H: toggle this panel
+Bar clicks: network/audio/calendar shortcuts
+Caps/Num Lock: state notifications
+Cava pops up automatically while audio plays
+TXT
+}
+
+show_panel() {
+  local body id
+  ensure_dunst
+  body="$(tips_text)"
+
+  if command -v dunstify >/dev/null 2>&1; then
+    if id="$(read_id 2>/dev/null)"; then
+      id="$(dunstify \
+        -a "SuperRice" \
+        -u low \
+        -t 0 \
+        -h string:x-dunst-stack-tag:superrice-tips \
+        -r "$id" \
+        -p \
+        "SuperRice key tips" \
+        "$body" 2>/dev/null || true)"
+    else
+      id="$(dunstify \
+        -a "SuperRice" \
+        -u low \
+        -t 0 \
+        -h string:x-dunst-stack-tag:superrice-tips \
+        -p \
+        "SuperRice key tips" \
+        "$body" 2>/dev/null || true)"
+    fi
+
+    if [ -n "$id" ]; then
+      printf '%s\n' "$id" > "$ID_FILE"
+    fi
+    return 0
+  fi
+
+  notify-send "SuperRice key tips" "$body"
+}
+
+hide_panel() {
+  local id
+  ensure_dunst
+  if command -v dunstify >/dev/null 2>&1; then
+    if id="$(read_id 2>/dev/null)"; then
+      dunstify \
+        -a "SuperRice" \
+        -u low \
+        -t 1 \
+        -h string:x-dunst-stack-tag:superrice-tips \
+        -r "$id" \
+        " " \
+        " " >/dev/null 2>&1 || true
+    else
+      dunstify \
+        -a "SuperRice" \
+        -u low \
+        -t 1 \
+        -h string:x-dunst-stack-tag:superrice-tips \
+        " " \
+        " " >/dev/null 2>&1 || true
+    fi
+  fi
+  rm -f "$ID_FILE"
+}
+
+case "${1:-toggle}" in
+  show)
+    show_panel
+    ;;
+  hide)
+    hide_panel
+    ;;
+  toggle)
+    if is_running; then
+      hide_panel
+    else
+      show_panel
+    fi
+    ;;
+  *)
+    echo "Usage: superrice-tips {show|hide|toggle}" >&2
+    exit 1
+    ;;
+esac

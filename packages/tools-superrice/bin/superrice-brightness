@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-status}"
+
+fail_perm() {
+  notify-send "Brightness blocked" "Run: sudo usermod -aG video $USER, then log out/in"
+  echo "Brightness permission denied. Run: sudo usermod -aG video $USER ; then log out/in." >&2
+  exit 1
+}
+
+current_pct() {
+  brightnessctl -m info 2>/dev/null | awk -F, 'NR==1 {gsub(/%/, "", $4); print int($4)}'
+}
+
+notify_level() {
+  local pct
+  pct="$(current_pct || true)"
+  [ -n "$pct" ] || pct=0
+
+  if command -v dunstify >/dev/null 2>&1; then
+    dunstify \
+      -a "SuperRice" \
+      -u low \
+      -t 900 \
+      -h string:x-dunst-stack-tag:superrice-brightness \
+      -h int:value:"$pct" \
+      "Brightness" "${pct}%" >/dev/null 2>&1 || true
+  else
+    notify-send "Brightness" "${pct}%" >/dev/null 2>&1 || true
+  fi
+}
+
+status_line() {
+  local pct
+  pct="$(current_pct || true)"
+  [ -n "$pct" ] || pct=0
+  printf '󰃠 %s%%\n' "$pct"
+}
+
+case "$cmd" in
+  up)
+    brightnessctl set +8% >/dev/null 2>&1 || fail_perm
+    notify_level
+    ;;
+  down)
+    brightnessctl set 8%- >/dev/null 2>&1 || fail_perm
+    notify_level
+    ;;
+  status)
+    status_line
+    ;;
+  *)
+    echo "Usage: superrice-brightness {up|down|status}" >&2
+    exit 1
+    ;;
+esac

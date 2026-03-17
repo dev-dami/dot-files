@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:-area}"
+root_dir="${SCREENSHOT_ROOT:-$HOME/Pictures/Screenshots}"
+day_dir="$root_dir/$(date +%F)"
+stamp="$(date +%H-%M-%S)"
+
+mkdir -p "$day_dir"
+
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Screenshot saved" "$1"
+  fi
+}
+
+save_or_cleanup() {
+  local file="$1"
+  if [ -s "$file" ]; then
+    notify "$file"
+    printf '%s\n' "$file"
+    exit 0
+  fi
+  rm -f "$file"
+  exit 1
+}
+
+case "$mode" in
+  area)
+    out="$day_dir/${stamp}-area.png"
+    flameshot gui --path "$out" || true
+    save_or_cleanup "$out"
+    ;;
+  full)
+    out="$day_dir/${stamp}-full.png"
+    flameshot full --path "$out"
+    save_or_cleanup "$out"
+    ;;
+  open)
+    if command -v xdg-open >/dev/null 2>&1; then
+      xdg-open "$day_dir" >/dev/null 2>&1 &
+    fi
+    printf '%s\n' "$day_dir"
+    ;;
+  *)
+    echo "Usage: superrice-shot {area|full|open}" >&2
+    exit 1
+    ;;
+esac

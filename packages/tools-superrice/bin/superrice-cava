@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CAVA_CLASS="SuperRiceCava"
+CAVA_TITLE="superrice-cava"
+CAVA_CFG="$HOME/.config/cava/config"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+STATE_FILE="$CACHE_DIR/cava-autopop.state"
+mkdir -p "$CACHE_DIR"
+
+has_window() {
+  i3-msg -t get_tree 2>/dev/null | jq -e '.. | objects | select(.window_properties? and (.window_properties.class // "") == "'"$CAVA_CLASS"'")' >/dev/null 2>&1
+}
+
+is_visible() {
+  i3-msg -t get_tree 2>/dev/null | jq -e '.. | objects | select(.window_properties? and (.window_properties.class // "") == "'"$CAVA_CLASS"'" and .visible == true)' >/dev/null 2>&1
+}
+
+spawn_window() {
+  command -v kitty >/dev/null 2>&1 || exit 0
+  command -v cava >/dev/null 2>&1 || exit 0
+  kitty --class "$CAVA_CLASS" --title "$CAVA_TITLE" sh -lc 'cava -p "$HOME/.config/cava/config"' >/dev/null 2>&1 &
+  sleep 0.25
+}
+
+ensure_window() {
+  if ! has_window; then
+    spawn_window
+  fi
+}
+
+show_window() {
+  ensure_window
+  i3-msg --quiet '[class="^'"$CAVA_CLASS"'$"] scratchpad show' >/dev/null 2>&1 || true
+}
+
+hide_window() {
+  i3-msg --quiet '[class="^'"$CAVA_CLASS"'$"] move scratchpad' >/dev/null 2>&1 || true
+}
+
+is_audio_playing() {
+  if command -v playerctl >/dev/null 2>&1; then
+    if playerctl status 2>/dev/null | rg -q '^Playing$'; then
+      return 0
+    fi
+  fi
+  if command -v pactl >/dev/null 2>&1; then
+    pactl list sink-inputs short 2>/dev/null | rg -q '.'
+    return $?
+  fi
+  return 1
+}
+
+run_autopop() {
+  local prev="0" now
+  [ -f "$STATE_FILE" ] && prev="$(cat "$STATE_FILE" 2>/dev/null || echo 0)"
+  while :; do
+    if is_audio_playing; then
+      now="1"
+    else
+      now="0"
+    fi
+
+    if [ "$now" = "1" ] && [ "$prev" != "1" ]; then
+      show_window
+    elif [ "$now" = "0" ] && [ "$prev" = "1" ]; then
+      hide_window
+    fi
+
+    prev="$now"
+    printf '%s' "$now" > "$STATE_FILE"
+    sleep 1
+  done
+}
+
+cmd="${1:-toggle}"
+case "$cmd" in
+  ensure)
+    ensure_window
+    ;;
+  show)
+    show_window
+    ;;
+  hide)
+    hide_window
+    ;;
+  toggle)
+    if is_visible; then
+      hide_window
+    else
+      show_window
+    fi
+    ;;
+  autopop-daemon)
+    run_autopop
+    ;;
+  *)
+    echo "Usage: superrice-cava {ensure|show|hide|toggle|autopop-daemon}" >&2
+    exit 1
+    ;;
+esac

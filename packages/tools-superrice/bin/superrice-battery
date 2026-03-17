@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+line="$(acpi -b 2>/dev/null | head -n1 || true)"
+
+if [ -z "$line" ]; then
+  printf ' N/A\n'
+  exit 0
+fi
+
+status="$(awk -F', ' '{print $1}' <<<"$line" | sed -E 's/^.*: //')"
+pct="$(awk -F', ' '{for (i = 1; i <= NF; i++) if ($i ~ /%/) {gsub(/%/, "", $i); print int($i); exit}}' <<<"$line")"
+pct="${pct:-0}"
+
+if [[ "$status" =~ Charging ]]; then
+  icon="󱐋"
+elif [[ "$status" =~ Full ]]; then
+  icon=""
+elif [ "$pct" -ge 90 ]; then
+  icon=""
+elif [ "$pct" -ge 70 ]; then
+  icon=""
+elif [ "$pct" -ge 45 ]; then
+  icon=""
+elif [ "$pct" -ge 20 ]; then
+  icon=""
+else
+  icon=""
+fi
+
+printf '%s %s%%\n' "$icon" "$pct"

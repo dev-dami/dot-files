@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+RAW_IMG="$CACHE_DIR/lockscreen.raw.png"
+LOCK_IMG="$CACHE_DIR/lockscreen.png"
+mkdir -p "$CACHE_DIR"
+
+build_lock_image() {
+  command -v import >/dev/null 2>&1 || return 1
+  command -v convert >/dev/null 2>&1 || return 1
+
+  if ! import -window root "$RAW_IMG" >/dev/null 2>&1; then
+    return 1
+  fi
+
+  if ! convert "$RAW_IMG" \
+    -filter Gaussian -resize 20% -resize 500% \
+    -fill '#101418' -colorize 18 \
+    "$LOCK_IMG" >/dev/null 2>&1; then
+    rm -f "$RAW_IMG" "$LOCK_IMG"
+    return 1
+  fi
+
+  rm -f "$RAW_IMG"
+  return 0
+}
+
+if command -v i3lock >/dev/null 2>&1; then
+  if build_lock_image; then
+    exec i3lock -n -i "$LOCK_IMG"
+  fi
+  exec i3lock -n -c 111318
+fi
+
+if command -v betterlockscreen >/dev/null 2>&1; then
+  exec betterlockscreen -l dimblur
+fi
+
+exit 1

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+clear
+if command -v cmatrix >/dev/null 2>&1; then
+  exec cmatrix -ab -u 2
+fi
+
+printf '\033[32m'
+while :; do
+  head -c 72 /dev/urandom | base64 | cut -c1-60
+  sleep 0.04
+done

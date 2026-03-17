@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/superrice-batteryd.lock"
+POWER_BIN="$HOME/bin/superrice-power"
+
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+  exit 0
+fi
+
+if [ ! -x "$POWER_BIN" ]; then
+  exit 0
+fi
+
+last_mode=""
+while :; do
+  mode="$("$POWER_BIN" detect-mode 2>/dev/null || echo ac)"
+  if [ "$mode" != "$last_mode" ]; then
+    "$POWER_BIN" auto >/dev/null 2>&1 || true
+    last_mode="$mode"
+  fi
+  sleep 20
+done

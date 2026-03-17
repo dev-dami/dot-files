@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+STATE_FILE="$CACHE_DIR/power-mode"
+mkdir -p "$CACHE_DIR"
+
+ac_online() {
+  local p t
+  for p in /sys/class/power_supply/*; do
+    [ -d "$p" ] || continue
+    t="$(cat "$p/type" 2>/dev/null || true)"
+    if [ "$t" = "Mains" ]; then
+      if [ "$(cat "$p/online" 2>/dev/null || echo 0)" = "1" ]; then
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+set_profile() {
+  local profile="$1"
+  if command -v powerprofilesctl >/dev/null 2>&1; then
+    powerprofilesctl set "$profile" >/dev/null 2>&1 || true
+  fi
+}
+
+set_display_policy() {
+  local mode="$1"
+  [ -n "${DISPLAY:-}" ] || return 0
+  command -v xset >/dev/null 2>&1 || return 0
+
+  if [ "$mode" = "battery" ]; then
+    xset s 300 300 >/dev/null 2>&1 || true
+    xset dpms 420 540 660 >/dev/null 2>&1 || true
+  else
+    xset s 600 600 >/dev/null 2>&1 || true
+    xset dpms 900 1200 1500 >/dev/null 2>&1 || true
+  fi
+}
+
+apply_mode() {
+  local mode="$1"
+  case "$mode" in
+    battery)
+      set_profile power-saver
+      set_display_policy battery
+      echo battery > "$STATE_FILE"
+      ;;
+    ac)
+      set_profile balanced
+      set_display_policy ac
+      echo ac > "$STATE_FILE"
+      ;;
+    *)
+      echo "Unknown mode: $mode" >&2
+      exit 1
+      ;;
+  esac
+}
+
+detect_mode() {
+  if ac_online; then
+    echo ac
+  else
+    echo battery
+  fi
+}
+
+cmd="${1:-auto}"
+
+case "$cmd" in
+  auto)
+    apply_mode "$(detect_mode)"
+    ;;
+  battery)
+    apply_mode battery
+    ;;
+  ac)
+    apply_mode ac
+    ;;
+  detect-mode)
+    detect_mode
+    ;;
+  status)
+    echo "mode: $(cat "$STATE_FILE" 2>/dev/null || echo unknown)"
+    echo "power-source: $(detect_mode)"
+    if command -v powerprofilesctl >/dev/null 2>&1; then
+      echo "profile: $(powerprofilesctl get 2>/dev/null || echo unknown)"
+    fi
+    ;;
+  *)
+    echo "Usage: superrice-power {auto|battery|ac|detect-mode|status}" >&2
+    exit 1
+    ;;
+esac

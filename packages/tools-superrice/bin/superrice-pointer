@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MODE="${1:-apply}"
+SPEED="${SUPERRICE_TOUCHPAD_SPEED:-0.55}"
+
+set_prop_if_supported() {
+  local id="$1"
+  local prop="$2"
+  shift 2
+  if xinput list-props "$id" 2>/dev/null | grep -Fq "$prop"; then
+    xinput set-prop "$id" "$prop" "$@" >/dev/null 2>&1 || true
+  fi
+}
+
+if ! command -v xinput >/dev/null 2>&1; then
+  echo "xinput is not installed."
+  exit 1
+fi
+
+touchpad_ids() {
+  xinput list --short 2>/dev/null \
+    | awk '
+      /[Tt]ouch[Pp]ad/ {
+        if (match($0, /id=[0-9]+/)) {
+          print substr($0, RSTART + 3, RLENGTH - 3)
+        }
+      }
+    '
+}
+
+apply_touchpad_profile() {
+  local id="$1"
+  # Adaptive profile gives low-speed precision + higher speed when moving farther/faster.
+  set_prop_if_supported "$id" "libinput Accel Profile Enabled" 1 0
+  set_prop_if_supported "$id" "libinput Accel Speed" "$SPEED"
+  set_prop_if_supported "$id" "libinput Tapping Enabled" 1
+  set_prop_if_supported "$id" "libinput Disable While Typing Enabled" 1
+  set_prop_if_supported "$id" "libinput Horizontal Scroll Enabled" 1
+  set_prop_if_supported "$id" "libinput Scroll Method Enabled" 1 0 0
+}
+
+show_status() {
+  local id="$1"
+  echo "Touchpad id=$id"
+  xinput list-props "$id" \
+    | grep -E "Device Node|libinput Accel Profile Enabled|libinput Accel Speed|libinput Tapping Enabled|libinput Disable While Typing Enabled|libinput Horizontal Scroll Enabled|libinput Scroll Method Enabled" \
+    || true
+  echo
+}
+
+ids="$(touchpad_ids || true)"
+if [[ -z "${ids}" ]]; then
+  echo "No touchpad devices found."
+  exit 0
+fi
+
+case "$MODE" in
+  apply)
+    while IFS= read -r id; do
+      [[ -n "$id" ]] || continue
+      apply_touchpad_profile "$id"
+    done <<< "$ids"
+    ;;
+  status)
+    while IFS= read -r id; do
+      [[ -n "$id" ]] || continue
+      show_status "$id"
+    done <<< "$ids"
+    ;;
+  *)
+    echo "Usage: superrice-pointer [apply|status]"
+    exit 1
+    ;;
+esac

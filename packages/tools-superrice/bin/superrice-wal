@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+wall="${1:-$HOME/.local/share/wallpapers/superrice-dynamic/current}"
+
+if [ -L "$wall" ]; then
+  wall="$(readlink -f "$wall" 2>/dev/null || echo "$wall")"
+fi
+
+if ! command -v wal >/dev/null 2>&1; then
+  notify-send "pywal missing" "Install pywal first (pip3 install --user pywal)"
+  echo "pywal not found" >&2
+  exit 1
+fi
+
+if [ ! -f "$wall" ]; then
+  notify-send "Wallpaper not found" "$wall"
+  echo "Wallpaper not found: $wall" >&2
+  exit 1
+fi
+
+if wal --help 2>/dev/null | rg -q -- '--backend'; then
+  if ! wal -n -q --backend "${SUPERRICE_WAL_BACKEND:-colorz}" -i "$wall"; then
+    wal -n -q -i "$wall"
+  fi
+else
+  wal -n -q -i "$wall"
+fi
+
+colors_file="$HOME/.cache/wal/colors"
+if [ ! -f "$colors_file" ]; then
+  echo "pywal colors file missing: $colors_file" >&2
+  exit 1
+fi
+
+mapfile -t palette < "$colors_file"
+[ "${#palette[@]}" -ge 8 ] || { echo "pywal palette too small" >&2; exit 1; }
+
+hex_to_rgb() {
+  local h="${1#\#}"
+  printf '%d %d %d\n' "0x${h:0:2}" "0x${h:2:2}" "0x${h:4:2}"
+}
+
+luma() {
+  local r g b
+  read -r r g b < <(hex_to_rgb "$1")
+  awk -v r="$r" -v g="$g" -v b="$b" 'BEGIN { printf "%.2f", (0.2126*r + 0.7152*g + 0.0722*b) }'
+}
+
+blend_hex() {
+  local a="${1#\#}" b="${2#\#}" p="$3"
+  local ar ag ab br bg bb rr rg rb
+  ar=$((16#${a:0:2})); ag=$((16#${a:2:2})); ab=$((16#${a:4:2}))
+  br=$((16#${b:0:2})); bg=$((16#${b:2:2})); bb=$((16#${b:4:2}))
+  rr=$(( (ar*(100-p) + br*p) / 100 ))
+  rg=$(( (ag*(100-p) + bg*p) / 100 ))
+  rb=$(( (ab*(100-p) + bb*p) / 100 ))
+  printf '#%02x%02x%02x\n' "$rr" "$rg" "$rb"
+}
+
+set_ini_value() {
+  local file="$1" section="$2" key="$3" value="$4"
+  local tmp
+  tmp="$(mktemp)"
+  awk -v sec="$section" -v key="$key" -v val="$value" '
+    BEGIN { inside=0; done=0 }
+    {
+      if ($0 ~ /^\[[^]]+\]$/) {
+        if (inside && !done) {
+          print key " = \"" val "\""
+          done=1
+        }
+        inside = ($0 == "[" sec "]")
+      }
+      if (inside && $1 == key) {
+        print key " = \"" val "\""
+        done=1
+        next
+      }
+      print
+    }
+    END {
+      if (inside && !done) {
+        print key " = \"" val "\""
+      } else if (!done) {
+        print ""
+        print "[" sec "]"
+        print key " = \"" val "\""
+      }
+    }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+colorfulness() {
+  local r g b max min
+  read -r r g b < <(hex_to_rgb "$1")
+  max="$r"; [ "$g" -gt "$max" ] && max="$g"; [ "$b" -gt "$max" ] && max="$b"
+  min="$r"; [ "$g" -lt "$min" ] && min="$g"; [ "$b" -lt "$min" ] && min="$b"
+  echo $((max - min))
+}
+
+abs_diff() {
+  awk -v a="$1" -v b="$2" 'BEGIN { d=a-b; if (d<0) d=-d; printf "%.2f", d }'
+}
+
+choose_bg() {
+  local candidate lum min_lum
+  candidate="${palette[0]}"
+  min_lum="$(luma "$candidate")"
+  for c in "${palette[@]:0:8}"; do
+    lum="$(luma "$c")"
+    if awk -v l="$lum" -v m="$min_lum" 'BEGIN { exit !(l < m) }'; then
+      candidate="$c"
+      min_lum="$lum"
+    fi
+  done
+  printf '%s\n' "$candidate"
+}
+
+choose_accent() {
+  local bg="$1"
+  shift
+  local best="" best_score="-1" c sat contrast score
+  local bg_l
+  bg_l="$(luma "$bg")"
+  for c in "$@"; do
+    sat="$(colorfulness "$c")"
+    contrast="$(abs_diff "$(luma "$c")" "$bg_l")"
+    score="$(awk -v s="$sat" -v d="$contrast" 'BEGIN { printf "%.2f", (s*0.68)+(d*0.32) }')"
+    if awk -v cur="$score" -v best="$best_score" 'BEGIN { exit !(cur > best) }'; then
+      best="$c"
+      best_score="$score"
+    fi
+  done
+  [ -n "$best" ] && printf '%s\n' "$best" || printf '%s\n' "${palette[4]}"
+}
+
+bg_raw="$(choose_bg)"
+bg="$(blend_hex "$bg_raw" "#0f1115" 35)"
+bg_alt="$(blend_hex "$bg" "${palette[1]}" 38)"
+accent="$(choose_accent "$bg" "${palette[@]:1:11}")"
+urgent="$(blend_hex "$accent" "#d16a76" 55)"
+warning="$(blend_hex "$accent" "#d2ad64" 45)"
+critical="$(blend_hex "$accent" "#c15f73" 60)"
+border="$(blend_hex "$accent" "$bg" 38)"
+
+bg_l="$(luma "$bg")"
+if awk -v l="$bg_l" 'BEGIN { exit !(l > 132) }'; then
+  fg="#10141a"
+else
+  fg="#e4ebf3"
+fi
+muted="$(blend_hex "$fg" "$bg" 52)"
+
+bg_alpha="#cc${bg#\#}"
+bg_alt_alpha="#dd${bg_alt#\#}"
+bar_bg_alpha="#88${bg#\#}"
+bar_bg_alt_alpha="#aa${bg_alt#\#}"
+accent_soft="#66${accent#\#}"
+
+# Keep notification internals/exteriors visually coherent (neutral stack).
+notif_bg="$(blend_hex "$bg" "$bg_alt" 34)"
+notif_bg_alpha="#dd${notif_bg#\#}"
+notif_frame="$(blend_hex "$border" "$muted" 30)"
+notif_frame_critical="$(blend_hex "$notif_frame" "#b45f67" 26)"
+
+rofi_wal="$HOME/.config/rofi/wal-colors.rasi"
+cat > "$rofi_wal" <<EOF
+* {
+    bg:       ${bg_alpha};
+    bg-alt:   ${bg_alt_alpha};
+    fg:       ${fg};
+    fg-muted: ${muted};
+    accent:   ${accent};
+    urgent:   ${urgent};
+    border:   ${border};
+}
+EOF
+
+polybar_colors="$HOME/.config/polybar/colors-wal.ini"
+mkdir -p "$(dirname "$polybar_colors")"
+cat > "$polybar_colors" <<EOF
+[wal]
+background = ${bar_bg_alpha}
+background-alt = ${bar_bg_alt_alpha}
+foreground = ${fg}
+muted = ${muted}
+accent = ${accent}
+warning = ${warning}
+critical = ${critical}
+EOF
+
+kitty_overrides="$HOME/.config/kitty/wal-overrides.conf"
+mkdir -p "$(dirname "$kitty_overrides")"
+cat > "$kitty_overrides" <<EOF
+foreground ${fg}
+background ${bg}
+selection_foreground ${bg}
+selection_background ${accent}
+cursor ${accent}
+color8 ${muted}
+EOF
+
+i3_wal="$HOME/.config/i3/colors-wal.conf"
+mkdir -p "$(dirname "$i3_wal")"
+cat > "$i3_wal" <<EOF
+client.focused          ${accent} ${bg} ${fg} ${accent} ${accent}
+client.focused_inactive ${border} ${bg} ${muted} ${border} ${border}
+client.unfocused        $(blend_hex "$bg" "#000000" 12) ${bg} ${muted} $(blend_hex "$bg" "#000000" 12) $(blend_hex "$bg" "#000000" 12)
+client.urgent           ${critical} ${bg} ${fg} ${critical} ${critical}
+client.placeholder      $(blend_hex "$bg" "#000000" 15) ${bg} ${muted} $(blend_hex "$bg" "#000000" 15) $(blend_hex "$bg" "#000000" 15)
+EOF
+
+eww_colors="$HOME/.config/eww/colors.scss"
+mkdir -p "$(dirname "$eww_colors")"
+cat > "$eww_colors" <<EOF
+\$bg: ${bg_alpha};
+\$bg_alt: ${bg_alt_alpha};
+\$fg: ${fg};
+\$muted: ${muted};
+\$accent: ${accent};
+\$accent_soft: ${accent_soft};
+\$border: ${border};
+EOF
+
+if [ -x "$HOME/.config/polybar/launch.sh" ]; then
+  "$HOME/.config/polybar/launch.sh" >/dev/null 2>&1 || true
+fi
+
+if [ -f "$HOME/.config/dunst/dunstrc" ]; then
+  set_ini_value "$HOME/.config/dunst/dunstrc" "global" "frame_color" "$notif_frame"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_low" "background" "${bg_alpha}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_low" "foreground" "${fg}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_low" "frame_color" "${notif_frame}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_normal" "background" "${notif_bg_alpha}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_normal" "foreground" "${fg}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_normal" "frame_color" "${notif_frame}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_critical" "background" "${notif_bg_alpha}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_critical" "foreground" "${fg}"
+  set_ini_value "$HOME/.config/dunst/dunstrc" "urgency_critical" "frame_color" "${notif_frame_critical}"
+fi
+
+if command -v dunstctl >/dev/null 2>&1; then
+  dunstctl reload >/dev/null 2>&1 || true
+fi
+pkill -HUP -x dunst >/dev/null 2>&1 || true
+
+if command -v i3-msg >/dev/null 2>&1; then
+  i3-msg reload >/dev/null 2>&1 || true
+fi
+
+notify-send "Pywal applied" "Theme synced: i3, polybar, rofi, kitty, dunst" >/dev/null 2>&1 || true
+echo "Applied pywal theme from $wall"

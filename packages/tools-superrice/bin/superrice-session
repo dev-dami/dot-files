@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROFI_THEME="$HOME/.config/rofi/power-menu.rasi"
+LOCK_CMD="$HOME/bin/superrice-lock"
+
+if [ ! -f "$ROFI_THEME" ]; then
+  ROFI_THEME="$HOME/.config/rofi/theme.rasi"
+fi
+
+rofi_cmd() {
+  local compose_fallback="/usr/share/X11/locale/en_US.UTF-8/Compose"
+  local locale_name locale_base compose_try
+  locale_name="${LC_CTYPE:-${LANG:-C.UTF-8}}"
+  locale_base="${locale_name%%.*}"
+  compose_try="/usr/share/X11/locale/${locale_base}.UTF-8/Compose"
+
+  if [ -f "$compose_try" ]; then
+    env LC_CTYPE="${locale_base}.UTF-8" XCOMPOSEFILE="$compose_try" rofi "$@"
+    return
+  fi
+
+  env LC_CTYPE="en_US.UTF-8" XCOMPOSEFILE="$compose_fallback" rofi "$@"
+}
+
+choose_action() {
+  printf '%s\n' \
+    "  Lock" \
+    "󰤄  Suspend" \
+    "󰍃  Logout" \
+    "󰜉  Reboot" \
+    "  Shutdown" \
+    | rofi_cmd -dmenu -i -p "Session" -theme "$ROFI_THEME" -no-custom
+}
+
+confirm_action() {
+  local label="$1"
+  local selected
+  selected="$(printf '%s\n' "No" "Yes" | rofi_cmd -dmenu -i -p "$label?" -theme "$ROFI_THEME" -no-custom)"
+  [ "$selected" = "Yes" ]
+}
+
+do_lock() {
+  exec "$LOCK_CMD"
+}
+
+do_suspend() {
+  "$LOCK_CMD" >/dev/null 2>&1 &
+  sleep 0.25
+  systemctl suspend
+}
+
+do_logout() {
+  i3-msg exit >/dev/null 2>&1 || true
+}
+
+do_reboot() {
+  systemctl reboot
+}
+
+do_shutdown() {
+  systemctl poweroff
+}
+
+run_menu() {
+  local selected
+  selected="$(choose_action || true)"
+
+  case "$selected" in
+    *Lock) do_lock ;;
+    *Suspend)
+      if confirm_action "Suspend"; then
+        do_suspend
+      fi
+      ;;
+    *Logout)
+      if confirm_action "Logout"; then
+        do_logout
+      fi
+      ;;
+    *Reboot)
+      if confirm_action "Reboot"; then
+        do_reboot
+      fi
+      ;;
+    *Shutdown)
+      if confirm_action "Shutdown"; then
+        do_shutdown
+      fi
+      ;;
+    *) exit 0 ;;
+  esac
+}
+
+case "${1:-menu}" in
+  menu) run_menu ;;
+  lock) do_lock ;;
+  suspend) do_suspend ;;
+  logout) do_logout ;;
+  reboot) do_reboot ;;
+  shutdown|poweroff) do_shutdown ;;
+  *)
+    echo "Usage: superrice-session {menu|lock|suspend|logout|reboot|shutdown}" >&2
+    exit 1
+    ;;
+esac

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+LOG_FILE="$CACHE_DIR/wallpaper.log"
+mkdir -p "$CACHE_DIR"
+
+curated_link="$HOME/.local/share/wallpapers/superrice/current"
+dynamic_link="$HOME/.local/share/wallpapers/superrice-dynamic/current"
+wall_dir="$HOME/.local/share/wallpapers/superrice"
+wall="${1:-$curated_link}"
+fallback="$HOME/Pictures/wallhaven-m3ykqk_3840x2160.png"
+
+if [ -L "$wall" ]; then
+  wall="$(readlink -f "$wall" 2>/dev/null || echo "$wall")"
+fi
+
+if [ ! -f "$wall" ] && [ -L "$curated_link" ]; then
+  wall="$(readlink -f "$curated_link" 2>/dev/null || echo "$wall")"
+fi
+
+if [ ! -f "$wall" ] && [ -L "$dynamic_link" ]; then
+  wall="$(readlink -f "$dynamic_link" 2>/dev/null || echo "$wall")"
+fi
+
+if [ ! -f "$wall" ] && [ -d "$wall_dir" ]; then
+  wall="$(find "$wall_dir" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | head -n1 || true)"
+fi
+
+if [ ! -f "$wall" ] && [ -f "$fallback" ]; then
+  wall="$fallback"
+fi
+
+# Guard against fully transparent/blank images (looks like "no wallpaper").
+if command -v identify >/dev/null 2>&1 && [ -f "$wall" ]; then
+  if identify -verbose "$wall" 2>/dev/null | rg -q "Histogram:.*#00000000 none|Alpha: none   #00000000"; then
+    if [ -f "$fallback" ]; then
+      wall="$fallback"
+    fi
+  fi
+fi
+
+{
+  echo "[$(date +'%F %T')] applying wallpaper: $wall"
+  if [ ! -f "$wall" ]; then
+    echo "wallpaper not found"
+    exit 1
+  fi
+
+  if command -v feh >/dev/null 2>&1; then
+    feh --no-fehbg --bg-fill "$wall"
+    mkdir -p "$(dirname "$curated_link")"
+    ln -sfn "$wall" "$curated_link"
+    echo "feh apply ok"
+    exit 0
+  fi
+
+  if command -v xsetroot >/dev/null 2>&1; then
+    xsetroot -solid "#15131b"
+    echo "feh missing; fallback solid color set"
+  else
+    echo "feh missing and xsetroot missing"
+    exit 1
+  fi
+} >>"$LOG_FILE" 2>&1

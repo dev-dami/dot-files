@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+EWW_CONFIG="${EWW_CONFIG:-$HOME/.config/eww}"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+LOG_FILE="$CACHE_DIR/eww.log"
+mkdir -p "$CACHE_DIR"
+touch "$LOG_FILE" 2>/dev/null || true
+
+resolve_eww() {
+  if [ -n "${EWW_BIN:-}" ] && [ -x "${EWW_BIN}" ]; then
+    printf '%s\n' "${EWW_BIN}"
+    return 0
+  fi
+  if [ -x "$HOME/eww/target/release/eww" ]; then
+    printf '%s\n' "$HOME/eww/target/release/eww"
+    return 0
+  fi
+  if command -v eww >/dev/null 2>&1; then
+    command -v eww
+    return 0
+  fi
+  return 1
+}
+
+EWW_BIN="$(resolve_eww 2>/dev/null || true)"
+
+have_eww() { [ -n "${EWW_BIN:-}" ] && [ -x "${EWW_BIN}" ]; }
+
+ensure_env() {
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$UID}"
+  if [ -z "${XAUTHORITY:-}" ] && [ -f "$HOME/.Xauthority" ]; then
+    export XAUTHORITY="$HOME/.Xauthority"
+  fi
+  if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -S "$XDG_RUNTIME_DIR/bus" ]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+  fi
+  if [ -z "${DISPLAY:-}" ]; then
+    local s
+    for s in /tmp/.X11-unix/X*; do
+      [ -S "$s" ] || continue
+      export DISPLAY=":${s##*X}"
+      break
+    done
+  fi
+  export GDK_BACKEND="${GDK_BACKEND:-x11}"
+}
+
+eww_cmd() {
+  ensure_env
+  "$EWW_BIN" -c "$EWW_CONFIG" "$@"
+}
+
+start_daemon_raw() {
+  ensure_env
+  eww_cmd kill >/dev/null 2>&1 || true
+  {
+    echo "[$(date +'%F %T')] starting eww daemon"
+    echo "DISPLAY=${DISPLAY:-unset} XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-unset} DBUS=${DBUS_SESSION_BUS_ADDRESS:-unset}"
+    "$EWW_BIN" -c "$EWW_CONFIG" daemon
+  } >>"$LOG_FILE" 2>&1 || true
+}
+
+start_daemon_via_i3() {
+  command -v i3-msg >/dev/null 2>&1 || return 1
+  i3-msg --quiet "exec --no-startup-id $HOME/bin/superrice-eww daemon-local" >/dev/null 2>&1 || return 1
+  sleep 0.6
+  return 0
+}
+
+ensure_daemon() {
+  have_eww || return 1
+  if eww_cmd ping >/dev/null 2>&1; then
+    return 0
+  fi
+
+  start_daemon_raw
+  sleep 0.35
+  if eww_cmd ping >/dev/null 2>&1; then
+    return 0
+  fi
+
+  start_daemon_via_i3 || true
+  if eww_cmd ping >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "[$(date +'%F %T')] daemon still down after local+i3 fallback" >>"$LOG_FILE"
+  return 1
+}
+
+toggle_window() {
+  local win="$1"
+  ensure_daemon || {
+    notify-send "eww missing" "Install eww to use control/calendar widgets"
+    exit 1
+  }
+  echo "[$(date +'%F %T')] toggle $win" >>"$LOG_FILE"
+  if ! eww_cmd open --toggle "$win" >/dev/null 2>&1; then
+    start_daemon_raw
+    sleep 0.3
+    if ! eww_cmd ping >/dev/null 2>&1; then
+      start_daemon_via_i3 || true
+      sleep 0.3
+    fi
+    eww_cmd open --toggle "$win" >/dev/null 2>&1 || {
+      notify-send "Eww failed" "Run: ~/bin/superrice-eww logs"
+      exit 1
+    }
+  fi
+}
+
+status_info() {
+  ensure_env
+  {
+    echo "bin=$EWW_BIN"
+    echo "config=$EWW_CONFIG"
+    echo "display=${DISPLAY:-unset}"
+    echo "xdg_runtime_dir=${XDG_RUNTIME_DIR:-unset}"
+    if eww_cmd ping >/dev/null 2>&1; then
+      echo "daemon=up"
+      echo "windows_available: $(eww_cmd list-windows 2>/dev/null | tr '\n' ' ' | sed 's/[[:space:]]\+$//')"
+      echo "windows_active: $(eww_cmd active-windows 2>/dev/null | tr '\n' ';' | sed 's/;$//')"
+    else
+      echo "daemon=down"
+    fi
+  } | tee -a "$LOG_FILE"
+}
+
+panic_close() {
+  have_eww || exit 0
+  eww_cmd close-all >/dev/null 2>&1 || true
+  pkill -f "/eww.* daemon" >/dev/null 2>&1 || true
+}
+
+cmd="${1:-toggle-control}"
+case "$cmd" in
+  daemon)
+    ensure_daemon
+    ;;
+  daemon-local)
+    start_daemon_raw
+    ;;
+  start)
+    ensure_daemon || exit 1
+    eww_cmd open bar >/dev/null 2>&1 || true
+    ;;
+  toggle-bar)
+    toggle_window bar
+    ;;
+  open-bar)
+    ensure_daemon || exit 1
+    eww_cmd open bar >/dev/null 2>&1 || true
+    ;;
+  close-bar)
+    ensure_daemon || exit 0
+    eww_cmd close bar >/dev/null 2>&1 || true
+    ;;
+  reload)
+    ensure_daemon || exit 1
+    eww_cmd reload >/dev/null 2>&1 || true
+    eww_cmd open bar >/dev/null 2>&1 || true
+    ;;
+  toggle-control)
+    toggle_window control
+    ;;
+  toggle-calendar)
+    toggle_window calendar
+    ;;
+  close-all)
+    ensure_daemon || exit 0
+    eww_cmd close-all >/dev/null 2>&1 || true
+    ;;
+  panic)
+    panic_close
+    ;;
+  logs)
+    tail -n 200 "$LOG_FILE"
+    for f in "$HOME"/.cache/eww/*.log; do
+      [ -f "$f" ] || continue
+      echo "--- $f"
+      tail -n 80 "$f"
+    done
+    ;;
+  status)
+    status_info
+    ;;
+  *)
+    echo "Usage: superrice-eww {daemon|daemon-local|start|reload|open-bar|close-bar|toggle-bar|toggle-control|toggle-calendar|close-all|panic|logs|status}" >&2
+    exit 1
+    ;;
+esac

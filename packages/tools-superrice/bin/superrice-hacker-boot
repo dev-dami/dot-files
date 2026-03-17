@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+clear
+printf '\033[1;32m[ superrice-hacker boot sequence ]\033[0m\n\n'
+for step in "i3 ipc ready" "wm tree sync" "polybar hooks online" "audio path linked" "power profile stable"; do
+  printf '\033[0;32m[ok]\033[0m %s\n' "$step"
+  sleep 0.12
+done
+printf '\n'
+if command -v fastfetch >/dev/null 2>&1; then
+  fastfetch --logo-type none --separator '  ' || true
+elif command -v neofetch >/dev/null 2>&1; then
+  neofetch --off || true
+fi
+printf '\n'
+while :; do
+  date '+%a %b %d  %H:%M:%S'
+  sleep 1
+done

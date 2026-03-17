@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+read -r _ user1 nice1 system1 idle1 iowait1 irq1 softirq1 steal1 _ < /proc/stat
+sleep 0.12
+read -r _ user2 nice2 system2 idle2 iowait2 irq2 softirq2 steal2 _ < /proc/stat
+
+total1=$((user1 + nice1 + system1 + idle1 + iowait1 + irq1 + softirq1 + steal1))
+total2=$((user2 + nice2 + system2 + idle2 + iowait2 + irq2 + softirq2 + steal2))
+idle_total1=$((idle1 + iowait1))
+idle_total2=$((idle2 + iowait2))
+
+dt=$((total2 - total1))
+di=$((idle_total2 - idle_total1))
+cpu=0
+if [ "$dt" -gt 0 ]; then
+  cpu=$(( (100 * (dt - di)) / dt ))
+fi
+
+mem_total_kb="$(awk '/MemTotal:/ {print $2}' /proc/meminfo)"
+mem_avail_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
+mem=0
+if [ "${mem_total_kb:-0}" -gt 0 ]; then
+  mem=$(( (100 * (mem_total_kb - mem_avail_kb)) / mem_total_kb ))
+fi
+
+printf '󰻠 %s%% 󰍛 %s%%\n' "$cpu" "$mem"

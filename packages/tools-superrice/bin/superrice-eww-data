@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-}"
+
+get_volume() {
+  if command -v wpctl >/dev/null 2>&1; then
+    wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{printf("%d\n", $2 * 100)}'
+  elif command -v pactl >/dev/null 2>&1; then
+    pactl get-sink-volume @DEFAULT_SINK@ | awk 'NR==1{gsub(/%/,"",$5); print $5}'
+  else
+    echo "0"
+  fi
+}
+
+get_brightness() {
+  if command -v brightnessctl >/dev/null 2>&1; then
+    brightnessctl -m 2>/dev/null | awk -F, '{gsub(/%/,"",$4); print $4; exit}'
+  else
+    echo "0"
+  fi
+}
+
+get_network() {
+  if command -v nmcli >/dev/null 2>&1; then
+    local ssid
+    ssid="$(nmcli -t -f ACTIVE,SSID dev wifi 2>/dev/null | awk -F: '$1=="yes"{print $2; exit}')"
+    if [ -n "$ssid" ]; then
+      printf '%s\n' "$ssid"
+      return
+    fi
+  fi
+  echo "offline"
+}
+
+get_player() {
+  if command -v playerctl >/dev/null 2>&1; then
+    local s
+    s="$(playerctl status 2>/dev/null || true)"
+    case "$s" in
+      Playing) echo "" ;;
+      Paused) echo "" ;;
+      *) echo "" ;;
+    esac
+  else
+    echo ""
+  fi
+}
+
+case "$cmd" in
+  volume) get_volume ;;
+  brightness) get_brightness ;;
+  network) get_network ;;
+  time) date +"%a %d %b  %H:%M" ;;
+  calendar) cal -m | sed 's/[[:space:]]\+$//' ;;
+  player) get_player ;;
+  *)
+    echo "Usage: superrice-eww-data {volume|brightness|network|time|calendar|player}" >&2
+    exit 1
+    ;;
+esac

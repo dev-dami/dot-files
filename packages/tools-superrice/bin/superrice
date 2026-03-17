@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/superrice"
+MODE_FILE="$CACHE_DIR/mode"
+SPLASH_PID="$CACHE_DIR/splash.pid"
+mkdir -p "$CACHE_DIR"
+
+PICOM_FULL="$HOME/.config/picom/picom-full.conf"
+PICOM_LIGHT="$HOME/.config/picom/picom-light.conf"
+PICOM_DEFAULT="$HOME/.config/picom/picom.conf"
+PICOM_PERF="$HOME/.config/picom/picom-performance.conf"
+
+is_running() {
+  local pid_file="$1"
+  [ -f "$pid_file" ] || return 1
+  local pid
+  pid="$(cat "$pid_file" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+start_picom_mode() {
+  local mode="$1"
+  local conf="$PICOM_DEFAULT"
+
+  case "$mode" in
+    full) conf="$PICOM_FULL" ;;
+    light) conf="$PICOM_LIGHT" ;;
+    perf) conf="$PICOM_PERF" ;;
+    off)
+      command -v picom >/dev/null 2>&1 || return 0
+      pkill -x picom >/dev/null 2>&1 || true
+      return 0
+      ;;
+  esac
+
+  command -v picom >/dev/null 2>&1 || return 0
+
+  pkill -x picom >/dev/null 2>&1 || true
+  sleep 0.08
+
+  if [ -f "$conf" ]; then
+    picom --daemon --config "$conf" >/dev/null 2>&1 || true
+  else
+    picom --daemon >/dev/null 2>&1 || true
+  fi
+}
+
+apply_power_auto() {
+  if [ -x "$HOME/bin/superrice-power" ]; then
+    "$HOME/bin/superrice-power" auto >/dev/null 2>&1 || true
+  fi
+}
+
+start_splash() {
+  if is_running "$SPLASH_PID"; then
+    return 0
+  fi
+
+  command -v kitty >/dev/null 2>&1 || return 0
+
+  kitty --class SuperRiceSplash --title superrice-splash sh -lc '
+    clear
+    if command -v fastfetch >/dev/null 2>&1; then
+      if [ -f "$HOME/.config/fastfetch/config.jsonc" ]; then
+        fastfetch --config "$HOME/.config/fastfetch/config.jsonc"
+      else
+        fastfetch
+      fi
+    else
+      printf "fastfetch not found. Install it and rerun superrice start.\\n"
+    fi
+    printf "\n"
+    printf "Welcome to SuperRice.\n"
+    printf "Use Mod+h to toggle tips panel.\n"
+    printf "Run: superrice start | superrice clean | superrice reset\n\n"
+    exec fish -l
+  ' >/dev/null 2>&1 &
+
+  echo "$!" > "$SPLASH_PID"
+}
+
+stop_splash() {
+  if is_running "$SPLASH_PID"; then
+    kill "$(cat "$SPLASH_PID")" >/dev/null 2>&1 || true
+    rm -f "$SPLASH_PID"
+  else
+    rm -f "$SPLASH_PID"
+    pkill -f -- "--class SuperRiceSplash" >/dev/null 2>&1 || true
+  fi
+}
+
+show_tips() {
+  "$HOME/bin/superrice-tips" show >/dev/null 2>&1 || true
+}
+
+hide_tips() {
+  "$HOME/bin/superrice-tips" hide >/dev/null 2>&1 || true
+}
+
+hide_panels() {
+  "$HOME/bin/superrice-eww" close-all >/dev/null 2>&1 || true
+}
+
+cmd="${1:-help}"
+
+case "$cmd" in
+  start)
+    start_picom_mode perf
+    apply_power_auto
+    start_splash
+    show_tips
+    echo perf > "$MODE_FILE"
+    ;;
+  full)
+    start_picom_mode full
+    apply_power_auto
+    start_splash
+    show_tips
+    echo full > "$MODE_FILE"
+    ;;
+  clean)
+    stop_splash
+    hide_tips
+    hide_panels
+    start_picom_mode perf
+    apply_power_auto
+    echo perf > "$MODE_FILE"
+    ;;
+  reset)
+    stop_splash
+    hide_tips
+    hide_panels
+    start_picom_mode perf
+    apply_power_auto
+    rm -f "$MODE_FILE"
+    i3-msg restart >/dev/null 2>&1 || true
+    ;;
+  speed)
+    stop_splash
+    hide_tips
+    hide_panels
+    start_picom_mode perf
+    apply_power_auto
+    echo perf > "$MODE_FILE"
+    ;;
+  turbo)
+    stop_splash
+    hide_tips
+    hide_panels
+    start_picom_mode off
+    apply_power_auto
+    echo off > "$MODE_FILE"
+    ;;
+  boot)
+    start_picom_mode perf
+    apply_power_auto
+    start_splash
+    echo perf > "$MODE_FILE"
+    ;;
+  hacker)
+    stop_splash
+    hide_tips
+    hide_panels
+    start_picom_mode perf
+    apply_power_auto
+    "$HOME/bin/superrice-hacker" start >/dev/null 2>&1 || true
+    echo perf > "$MODE_FILE"
+    ;;
+  hacker-stop)
+    "$HOME/bin/superrice-hacker" stop >/dev/null 2>&1 || true
+    ;;
+  status)
+    if [ -f "$MODE_FILE" ]; then
+      cat "$MODE_FILE"
+    else
+      echo "perf"
+    fi
+    ;;
+  *)
+    cat <<USAGE
+Usage: superrice {start|full|clean|speed|turbo|reset|boot|hacker|hacker-stop|status}
+  start  - splash + tips + lightweight transparency mode (recommended)
+  full   - splash + tips + full compositor mode
+  clean  - hide splash/tips + lightweight transparency mode
+  speed  - hide splash/tips + balanced performance compositor mode
+  turbo  - hide splash/tips + disable compositor (fastest)
+  reset  - restore lightweight transparency defaults and restart i3
+  boot   - startup-safe mode (splash + lightweight transparency)
+  hacker - open tmux multi-pane "matrix/hacker" scene in centered terminal
+  hacker-stop - close and remove hacker tmux session
+  status - print active mode
+USAGE
+    exit 1
+    ;;
+esac
