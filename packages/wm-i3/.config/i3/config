@@ -1,0 +1,209 @@
+# SuperRice i3 config - macOS-inspired unixporn rice
+
+set $mod Mod4
+set $terminal kitty
+set $launcher rofi -show drun -theme ~/.config/rofi/theme.rasi
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+
+font pango:JetBrainsMono Nerd Font 10
+floating_modifier $mod
+
+# Visual spacing and borders (lean + fast)
+default_border pixel 1
+default_floating_border pixel 1
+gaps inner 8
+gaps outer 6
+smart_gaps on
+smart_borders on
+hide_edge_borders smart_no_gaps
+
+# Window colors (neutral graphite)
+client.focused          #8ca4c4 #15181d #d6dceb #8ca4c4 #8ca4c4
+client.focused_inactive #4a5361 #15181d #9ca6b6 #4a5361 #4a5361
+client.unfocused        #2a2f37 #111317 #737f90 #2a2f37 #2a2f37
+client.urgent           #b7c8df #1b1f24 #edf2f9 #b7c8df #b7c8df
+client.placeholder      #2a2f37 #111317 #737f90 #2a2f37 #2a2f37
+include ~/.config/i3/colors-wal.conf
+
+# Launchers
+bindsym $mod+Return exec --no-startup-id $terminal
+bindsym $mod+d exec --no-startup-id $launcher
+bindsym $mod+space exec --no-startup-id rofi -show run -theme ~/.config/rofi/theme.rasi
+bindsym $mod+h exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-tips" ]; then "$HOME/bin/superrice-tips" toggle; else notify-send "Tips overlay unavailable"; fi'
+
+# Standard i3 controls
+bindsym $mod+Shift+q kill
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-session" ]; then "$HOME/bin/superrice-session" menu; else i3-nagbar -t error -m "Exit: Session menu unavailable" -b "Exit i3" "i3-msg exit"; fi'
+
+# Focus movement
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+bindsym $mod+semicolon focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# Move windows
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+semicolon move left
+
+# Fast resize without entering mode
+bindsym $mod+Ctrl+Left resize shrink width 20 px or 5 ppt
+bindsym $mod+Ctrl+Down resize grow height 20 px or 5 ppt
+bindsym $mod+Ctrl+Up resize shrink height 20 px or 5 ppt
+bindsym $mod+Ctrl+Right resize grow width 20 px or 5 ppt
+bindsym $mod+Ctrl+semicolon resize shrink width 20 px or 5 ppt
+bindsym $mod+Ctrl+j resize grow height 20 px or 5 ppt
+bindsym $mod+Ctrl+k resize shrink height 20 px or 5 ppt
+bindsym $mod+Ctrl+l resize grow width 20 px or 5 ppt
+
+# Layouts
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+a focus parent
+
+# Split orientation
+bindsym $mod+v split v
+bindsym $mod+b split h
+
+# Workspace navigation
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number $ws8
+bindsym $mod+9 workspace number $ws9
+
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number $ws8
+bindsym $mod+Shift+9 move container to workspace number $ws9
+
+# Mouse/touchpad workspace gestures
+bindsym --whole-window $mod+button4 workspace prev_on_output
+bindsym --whole-window $mod+button5 workspace next_on_output
+bindsym --whole-window $mod+button6 workspace prev_on_output
+bindsym --whole-window $mod+button7 workspace next_on_output
+bindsym --whole-window $mod+Shift+button4 move container to workspace prev_on_output
+bindsym --whole-window $mod+Shift+button5 move container to workspace next_on_output
+
+# Scratchpads
+for_window [class="^scratchpad-term$"] floating enable, move scratchpad, resize set 1280 760, border pixel 2
+for_window [class="^scratchpad-notes$"] floating enable, move scratchpad, resize set 1100 700, border pixel 2
+bindsym $mod+Shift+Return exec --no-startup-id kitty --class scratchpad-term --title scratchpad-term
+bindsym $mod+grave [class="^scratchpad-term$"] scratchpad show
+bindsym $mod+Shift+n exec --no-startup-id kitty --class scratchpad-notes --title scratchpad-notes sh -lc 'mkdir -p "$HOME/notes"; ${EDITOR:-nano} "$HOME/notes/scratch.md"'
+bindsym $mod+n [class="^scratchpad-notes$"] scratchpad show
+
+# Dedicated splash and tips windows
+for_window [class="^SuperRiceSplash$"] floating enable, move position center, resize set 1180 720, border pixel 2
+for_window [class="^SuperRiceCava$"] floating enable, sticky enable, move position center, resize set 980 210, move scratchpad, border pixel 1
+
+# Workspace assignment rules
+assign [class="(?i)(firefox|brave-browser|google-chrome|chromium)"] $ws2
+assign [class="(?i)(kitty|Alacritty)"] $ws1
+assign [class="(?i)(code|obsidian|discord|slack|thunar|nemo)"] $ws3
+
+# Media, brightness, screenshots, clipboard, lock
+# Audio controls with fallback to standard tools
+bindsym XF86AudioRaiseVolume exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-audio" ]; then "$HOME/bin/superrice-audio" up; elif command -v wpctl >/dev/null 2>&1; then wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+; elif command -v pactl >/dev/null 2>&1; then pactl set-sink-volume @DEFAULT_SINK@ +5%; else notify-send "Audio control unavailable"; fi'
+bindsym XF86AudioLowerVolume exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-audio" ]; then "$HOME/bin/superrice-audio" down; elif command -v wpctl >/dev/null 2>&1; then wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-; elif command -v pactl >/dev/null 2>&1; then pactl set-sink-volume @DEFAULT_SINK@ -5%; else notify-send "Audio control unavailable"; fi'
+bindsym XF86AudioMute exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-audio" ]; then "$HOME/bin/superrice-audio" mute; elif command -v wpctl >/dev/null 2>&1; then wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; elif command -v pactl >/dev/null 2>&1; then pactl set-sink-mute @DEFAULT_SINK@ toggle; else notify-send "Audio control unavailable"; fi'
+bindsym XF86AudioMicMute exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-audio" ]; then "$HOME/bin/superrice-audio" micmute; elif command -v wpctl >/dev/null 2>&1; then wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; elif command -v pactl >/dev/null 2>&1; then pactl set-source-mute @DEFAULT_SOURCE@ toggle; else notify-send "Microphone control unavailable"; fi'
+bindsym XF86AudioPlay exec --no-startup-id playerctl play-pause
+bindsym XF86AudioNext exec --no-startup-id playerctl next
+bindsym XF86AudioPrev exec --no-startup-id playerctl previous
+bindsym XF86PowerOff exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-session" ]; then "$HOME/bin/superrice-session" menu; else i3-nagbar -m "Session menu unavailable - install superrice-session script"; fi'
+bindsym XF86MonBrightnessUp exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-brightness" ]; then "$HOME/bin/superrice-brightness" up; elif command -v brightnessctl >/dev/null 2>&1; then brightnessctl set +5%; else notify-send "Brightness control unavailable"; fi'
+bindsym XF86MonBrightnessDown exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-brightness" ]; then "$HOME/bin/superrice-brightness" down; elif command -v brightnessctl >/dev/null 2>&1; then brightnessctl set 5%-; else notify-send "Brightness control unavailable"; fi'
+bindsym Print exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-shot" ]; then "$HOME/bin/superrice-shot" area; elif command -v flameshot >/dev/null 2>&1; then flameshot gui; else import -window root "$HOME/Pictures/Screenshots/$(date +%Y-%m-%d-%H-%M-%S).png"; fi'
+bindsym Shift+Print exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-shot" ]; then "$HOME/bin/superrice-shot" full; elif command -v flameshot >/dev/null 2>&1; then flameshot full; else import -window root "$HOME/Pictures/Screenshots/$(date +%Y-%m-%d-%H-%M-%S).png"; fi'
+bindsym Ctrl+Print exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-shot" ]; then "$HOME/bin/superrice-shot" open; elif [ -d "$HOME/Pictures/Screenshots" ]; then xdg-open "$HOME/Pictures/Screenshots"; else notify-send "Screenshots directory not found"; fi'
+bindsym $mod+Ctrl+p exec --no-startup-id pavucontrol
+bindsym $mod+Ctrl+c exec --no-startup-id gsimplecal
+bindsym $mod+Ctrl+v exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-cava" ]; then "$HOME/bin/superrice-cava" toggle; else notify-send "Visualizer unavailable"; fi'
+bindsym $mod+Shift+p exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-wal" ]; then "$HOME/bin/superrice-wal"; else notify-send "Wallpaper tool unavailable"; fi'
+bindsym $mod+Shift+period exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-wallcycle" ]; then "$HOME/bin/superrice-wallcycle" next; else notify-send "Wallpaper cycle unavailable"; fi'
+bindsym $mod+Shift+comma exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-wallcycle" ]; then "$HOME/bin/superrice-wallcycle" prev; else notify-send "Wallpaper cycle unavailable"; fi'
+bindsym $mod+Shift+slash exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-wallcycle" ]; then "$HOME/bin/superrice-wallcycle" random; else notify-send "Wallpaper random unavailable"; fi'
+bindsym $mod+Shift+g exec --no-startup-id gsimplecal
+bindsym $mod+Shift+b exec --no-startup-id blueman-manager
+bindsym $mod+Shift+a exec --no-startup-id kitty --title calcurse sh -lc 'calcurse'
+bindsym $mod+Shift+v exec --no-startup-id sh -lc 'if command -v clipmenu >/dev/null 2>&1; then clipmenu -i; elif command -v copyq >/dev/null 2>&1; then copyq --start-server >/dev/null 2>&1 || true; copyq show; else notify-send "Clipboard manager missing" "Install clipmenu or copyq"; fi'
+bindsym $mod+Shift+x exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-session" ]; then "$HOME/bin/superrice-session" lock; elif command -v i3lock >/dev/null 2>&1; then i3lock; else notify-send "Screen lock unavailable"; fi'
+bindsym $mod+F5 exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-layout" ]; then "$HOME/bin/superrice-layout" save; else notify-send "Layout save unavailable"; fi'
+bindsym $mod+F6 exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-layout" ]; then "$HOME/bin/superrice-layout" restore; else notify-send "Layout restore unavailable"; fi'
+bindsym $mod+Shift+F5 exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-layout" ]; then "$HOME/bin/superrice-layout" save-all; else notify-send "Layout save-all unavailable"; fi'
+bindsym $mod+Shift+F6 exec --no-startup-id sh -c 'if [ -x "$HOME/bin/superrice-layout" ]; then "$HOME/bin/superrice-layout" restore-all; else notify-send "Layout restore-all unavailable"; fi'
+
+# Resize mode
+mode "resize [arrows/hjkl] (Enter/Esc exits)" {
+    bindsym h resize shrink width 20 px or 5 ppt
+    bindsym j resize grow height 20 px or 5 ppt
+    bindsym k resize shrink height 20 px or 5 ppt
+    bindsym l resize grow width 20 px or 5 ppt
+    bindsym Left resize shrink width 10 px or 10 ppt
+    bindsym Down resize grow height 10 px or 10 ppt
+    bindsym Up resize shrink height 10 px or 10 ppt
+    bindsym Right resize grow width 10 px or 10 ppt
+    bindsym Escape mode "default"
+    bindsym Return mode "default"
+}
+bindsym $mod+r mode "resize [arrows/hjkl] (Enter/Esc exits)"
+bindsym $mod+m mode "move [arrows/hjkl] (Enter/Esc exits)"
+
+# Move mode
+mode "move [arrows/hjkl] (Enter/Esc exits)" {
+    bindsym h move left
+    bindsym j move down
+    bindsym k move up
+    bindsym l move right
+    bindsym Left move left
+    bindsym Down move down
+    bindsym Up move up
+    bindsym Right move right
+    bindsym Escape mode "default"
+    bindsym Return mode "default"
+}
+bindsym $mod+Shift+m mode "move [arrows/hjkl] (Enter/Esc exits)"
+
+# Session startup (only splash window + background services)
+exec_always --no-startup-id sh -lc 'chmod +x "$HOME/bin/superrice-set-wallpaper" "$HOME/bin/superrice-wal"; "$HOME/bin/superrice-set-wallpaper"; "$HOME/bin/superrice-wal" "$HOME/.local/share/wallpapers/superrice/current" >/dev/null 2>&1 || true'
+exec_always --no-startup-id sh -lc 'pkill -x dunst >/dev/null 2>&1 || true; dunst -conf "$HOME/.config/dunst/dunstrc" >/dev/null 2>&1 &'
+exec_always --no-startup-id sh -lc 'pkill -x xsettingsd >/dev/null 2>&1 || true; xsettingsd -c "$HOME/.config/xsettingsd/xsettingsd.conf"'
+exec_always --no-startup-id sh -lc 'chmod +x "$HOME/bin/superrice-lock"; pkill -x xss-lock >/dev/null 2>&1 || true; xss-lock --transfer-sleep-lock -- "$HOME/bin/superrice-lock"'
+exec_always --no-startup-id sh -lc 'chmod +x "$HOME/bin/superrice-lockkeys"; pkill -f "bin/superrice-lockkeys daemon" >/dev/null 2>&1 || true; "$HOME/bin/superrice-lockkeys" daemon >/dev/null 2>&1 &'
+exec_always --no-startup-id sh -lc 'pkill -f "/eww.* daemon" >/dev/null 2>&1 || true'
+exec_always --no-startup-id sh -lc 'chmod +x "$HOME/bin/superrice-cava"; pkill -f "bin/superrice-cava autopop-daemon" >/dev/null 2>&1 || true; "$HOME/bin/superrice-cava" autopop-daemon >/dev/null 2>&1 &'
+exec_always --no-startup-id sh -lc 'if command -v clipmenud >/dev/null 2>&1; then clipmenud; fi'
+exec_always --no-startup-id sh -lc 'chmod +x "$HOME/bin/superrice-power" "$HOME/bin/superrice-batteryd"; "$HOME/bin/superrice-power" auto >/dev/null 2>&1 || true; pkill -f "bin/superrice-batteryd" >/dev/null 2>&1 || true; "$HOME/bin/superrice-batteryd" >/dev/null 2>&1 &'
+exec_always --no-startup-id sh -lc 'pkill -f "bin/superrice-workspace-icons" >/dev/null 2>&1 || true; "$HOME/bin/superrice-workspace-icons" >/dev/null 2>&1 &'
+exec_always --no-startup-id sh -lc 'chmod +x "$HOME/bin/superrice-pointer"; "$HOME/bin/superrice-pointer" apply >/dev/null 2>&1 || true'
+exec_always --no-startup-id $HOME/.config/polybar/launch.sh
+exec_always --no-startup-id $HOME/bin/superrice boot
