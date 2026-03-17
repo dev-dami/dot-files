@@ -1,0 +1,37 @@
+README.md
+  e55808807d512614 3,5,7-14,20-37
+  78fdefe8942f6039 40,44,53,55-60,62,65,70-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "93f458da28114cc48cd6fd5e5b32593e94685363",
+  "prompts": {
+    "78fdefe8942f6039": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-6d32e287-2658-4436-9364-6242aa0d4b0d",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 115,
+      "accepted_lines": 13,
+      "overriden_lines": 0
+    },
+    "e55808807d512614": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-7f3fdeb8-a701-4bd4-b8b0-ec66db3f553e",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 28,
+      "total_deletions": 46,
+      "accepted_lines": 28,
+      "overriden_lines": 0
+    }
+  }
+}
