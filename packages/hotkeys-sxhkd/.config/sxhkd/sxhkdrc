@@ -1,0 +1,101 @@
+#
+# sxhkd hotkeys for i3
+# Note: i3 handles most window management hotkeys internally
+# This file is for global/system-level hotkeys that don't conflict with i3
+#
+
+# Reload sxhkd configuration
+super + Escape
+	pkill -USR1 -x sxhkd
+
+# Launch application launcher (alternative to i3's dmenu)
+super + d
+	rofi -show run -theme ~/.config/rofi/theme.rasi
+
+# Terminal emulator (alternative to i3's mod+Return)
+super + t
+	kitty
+
+# Screen capture
+Print
+	$HOME/bin/superrice-shot area
+Shift + Print
+	$HOME/bin/superrice-shot full
+Ctrl + Print
+	$HOME/bin/superrice-shot open
+
+# Volume control
+XF86AudioRaiseVolume
+	$HOME/bin/superrice-audio up
+XF86AudioLowerVolume
+	$HOME/bin/superrice-audio down
+XF86AudioMute
+	$HOME/bin/superrice-audio mute
+XF86AudioMicMute
+	$HOME/bin/superrice-audio micmute
+
+# Brightness control
+XF86MonBrightnessUp
+	$HOME/bin/superrice-brightness up
+XF86MonBrightnessDown
+	$HOME/bin/superrice-brightness down
+
+# Media control
+XF86AudioPlay
+	playerctl play-pause
+XF86AudioNext
+	playerctl next
+XF86AudioPrev
+	playerctl previous
+
+# Power menu
+XF86PowerOff
+	$HOME/bin/superrice-session menu
+
+# Lock screen
+super + x
+	$HOME/bin/superrice-session lock
+
+# Launch file manager
+super + f
+	thunar
+
+# Launch web browser
+super + w
+	firefox
+
+# Launch clipboard manager
+super + v
+	clipmenu -i
+
+# Launch calculator
+super + c
+	bc -l
+
+# Launch calendar
+super + Shift + c
+	gsimplecal
+
+# Launch system monitor
+super + Shift + m
+	btop
+
+# Launch network manager
+super + Shift + n
+	nmtui
+
+# Launch bluetooth manager
+super + Shift + b
+	blueman-manager
+
+# Toggle music player
+super + Shift + p
+	$HOME/bin/superrice-cava toggle
+
+# Change wallpaper
+super + Shift + w
+	$HOME/bin/superrice-wallcycle next
+
+# Random wallpaper
+super + Shift + r
+	$HOME/bin/superrice-wallcycle random
