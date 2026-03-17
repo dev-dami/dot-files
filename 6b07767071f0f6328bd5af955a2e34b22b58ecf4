@@ -1,0 +1,23 @@
+README.md
+  67551c9609706ec8 3,5,7-14,16,20,29,31-36,38,40-60,62,65,70-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "6b07767071f0f6328bd5af955a2e34b22b58ecf4",
+  "prompts": {
+    "67551c9609706ec8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-37581843-6e15-4bba-b483-a7d4f88f7091",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 165,
+      "accepted_lines": 45,
+      "overriden_lines": 0
+    }
+  }
+}
