@@ -1,0 +1,29 @@
+git
+stow
+kitty
+i3-wm
+i3status
+polybar
+rofi
+dunst
+picom
+sxhkd
+btop
+fastfetch
+code
+# Superrice dependencies
+pipewire-pulse
+brightnessctl
+flameshot
+i3lock
+playerctl
+# Optional for enhanced features
+pywal
+xsettingsd
+xss-lock
+clipmenu
+calcurse
+gsimplecal
+blueman-manager
+pavucontrol
+
