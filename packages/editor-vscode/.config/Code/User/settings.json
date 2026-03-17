@@ -1,0 +1,108 @@
+{
+  "security.workspace.trust.untrustedFiles": "open",
+  "claudeCode.preferredLocation": "panel",
+
+  "workbench.colorTheme": "Abyss",
+  "workbench.iconTheme": "deepdark-material-icons",
+  "window.titleBarStyle": "custom",
+  "workbench.startupEditor": "none",
+  "window.commandCenter": false,
+  "workbench.layoutControl.enabled": false,
+
+  "workbench.activityBar.location": "left",
+  "workbench.sideBar.location": "left",
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "workbench.statusBar.visible": true,
+  "workbench.panel.defaultLocation": "bottom",
+
+  "workbench.editor.showTabs": "single",
+  "workbench.editor.editorActionsLocation": "hidden",
+  "workbench.editor.tabCloseButton": "off",
+  "workbench.editor.enablePreview": true,
+  "workbench.editor.enablePreviewFromQuickOpen": true,
+
+  "breadcrumbs.enabled": false,
+  "explorer.openEditors.visible": 0,
+  "explorer.compactFolders": true,
+
+  "editor.fontFamily": "JetBrains Mono, Fira Code, monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 14,
+  "editor.lineHeight": 22,
+  "editor.tabSize": 2,
+  "editor.minimap.enabled": false,
+  "editor.glyphMargin": false,
+  "editor.stickyScroll.enabled": false,
+  "editor.codeLens": false,
+  "editor.inlayHints.enabled": "off",
+  "editor.bracketPairColorization.enabled": false,
+  "editor.guides.bracketPairs": false,
+  "editor.renderWhitespace": "selection",
+  "editor.cursorBlinking": "solid",
+  "editor.cursorSmoothCaretAnimation": "off",
+  "editor.smoothScrolling": false,
+  "editor.scrollbar.vertical": "hidden",
+  "editor.scrollbar.horizontal": "hidden",
+
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 700,
+
+  "git.autofetch": false,
+  "git.confirmSync": false,
+  "scm.alwaysShowRepositories": false,
+
+  "terminal.integrated.fontFamily": "JetBrains Mono, Fira Code, monospace",
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.cursorBlinking": false,
+  "terminal.integrated.scrollback": 3000,
+
+  "workbench.tips.enabled": false,
+  "extensions.ignoreRecommendations": true,
+  "telemetry.telemetryLevel": "off",
+
+  "workbench.colorCustomizations": {
+    "focusBorder": "#89b4fa",
+    "foreground": "#d8dee9",
+    "descriptionForeground": "#9aa0a8",
+
+    "editor.background": "#171a20",
+    "editor.foreground": "#d8dee9",
+    "editorLineNumber.foreground": "#4c566a",
+    "editorLineNumber.activeForeground": "#89b4fa",
+    "editorCursor.foreground": "#89b4fa",
+
+    "titleBar.activeBackground": "#171a20",
+    "titleBar.activeForeground": "#d8dee9",
+    "titleBar.inactiveBackground": "#171a20",
+    "titleBar.inactiveForeground": "#9aa0a8",
+
+    "sideBar.background": "#1e222a",
+    "sideBar.foreground": "#d8dee9",
+    "sideBarSectionHeader.background": "#1e222a",
+    "sideBarSectionHeader.foreground": "#d8dee9",
+
+    "statusBar.background": "#1e222a",
+    "statusBar.foreground": "#c6ceda",
+
+    "panel.background": "#1e222a",
+    "panel.border": "#2b303b",
+
+    "tab.activeBackground": "#1e222a",
+    "tab.activeForeground": "#d8dee9",
+    "tab.activeBorderTop": "#89b4fa",
+    "tab.inactiveBackground": "#171a20",
+    "tab.inactiveForeground": "#9aa0a8",
+
+    "list.activeSelectionBackground": "#2b303b",
+    "list.activeSelectionForeground": "#d8dee9",
+    "list.hoverBackground": "#232833",
+    "list.highlightForeground": "#89b4fa"
+  },
+  "workbench.editor.tabActionCloseVisibility": false,
+  "material-ui-snippets.showNotesOnStartup": false,
+  "git.path": "/home/damilare/.git-ai/bin/git",
+  "chat.hookFilesLocations": {
+    "~/.github/hooks": true
+  },
+  "chat.useHooks": true
+}
