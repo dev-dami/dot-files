@@ -1,0 +1,121 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+    "type": "file-raw",
+    "source": "/home/damilare/.config/neofetch/tux.ascii",
+    "padding": {
+      "top": 0,
+      "left": 0,
+      "right": 3
+    },
+    "printRemaining": true
+  },
+  "display": {
+    "separator": ": ",
+    "brightColor": true,
+    "size": {
+      "maxPrefix": "MB",
+      "ndigits": 0,
+      "spaceBeforeUnit": "never"
+    },
+    "freq": {
+      "ndigits": 3,
+      "spaceBeforeUnit": "never"
+    }
+  },
+  "general": {
+    "detectVersion": true
+  },
+  "modules": [
+    {
+      "type": "title",
+      "key": " "
+    },
+    {
+      "type": "separator",
+      "string": "-",
+      "key": " "
+    },
+    {
+      "type": "os",
+      "key": "OS"
+    },
+    {
+      "type": "host",
+      "key": "Host"
+    },
+    {
+      "type": "kernel",
+      "key": "Kernel",
+      "format": "{release}"
+    },
+    {
+      "type": "uptime",
+      "key": "Uptime"
+    },
+    {
+      "type": "packages",
+      "key": "Packages",
+      "combined": false
+    },
+    {
+      "type": "shell",
+      "key": "Shell"
+    },
+    {
+      "type": "display",
+      "key": "Resolution",
+      "compactType": "none",
+      "preciseRefreshRate": false
+    },
+    {
+      "type": "de",
+      "key": "DE"
+    },
+    {
+      "type": "wm",
+      "key": "WM"
+    },
+    {
+      "type": "wmtheme",
+      "key": "WM Theme"
+    },
+    {
+      "type": "theme",
+      "key": "Theme"
+    },
+    {
+      "type": "icons",
+      "key": "Icons"
+    },
+    {
+      "type": "terminal",
+      "key": "Terminal"
+    },
+    {
+      "type": "terminalfont",
+      "key": "Terminal Font",
+      "format": "{/name}{-}{/}{name}{?size} {size}{?}"
+    },
+    {
+      "type": "cpu",
+      "key": "CPU"
+    },
+    {
+      "type": "gpu",
+      "key": "GPU",
+      "format": "{name}"
+    },
+    {
+      "type": "memory",
+      "key": "Memory",
+      "format": "{used} / {total}"
+    },
+    {
+      "type": "colors",
+      "key": " ",
+      "symbol": "block",
+      "paddingLeft": 0
+    }
+  ]
+}
