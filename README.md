@@ -59,7 +59,7 @@ dotfiles/
 
 1. Clone the repository:
    ```bash
-   git clone <repo-url> ~/dotfiles
+   https://github.com/dev-dami/dot-files.git ~/dotfiles
    cd ~/dotfiles
    ```
 
