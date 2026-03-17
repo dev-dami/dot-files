@@ -1,0 +1,77 @@
+@import "~/.config/rofi/wal-colors.rasi"
+
+* {
+    background-color: transparent;
+    text-color: @fg;
+    font: "JetBrainsMono Nerd Font 12";
+}
+
+window {
+    transparency: "real";
+    location: center;
+    anchor: center;
+    fullscreen: false;
+    width: 42%;
+    border: 2px;
+    border-radius: 16px;
+    border-color: @border;
+    background-color: @bg;
+    padding: 24px;
+}
+
+mainbox {
+    spacing: 16px;
+    children: [ inputbar, message, listview ];
+}
+
+inputbar {
+    children: [ prompt, entry ];
+    spacing: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background-color: @bg-alt;
+}
+
+prompt {
+    text-color: @accent;
+    str: "spotlight";
+}
+
+entry {
+    placeholder: "Search apps, commands, files...";
+    placeholder-color: @fg-muted;
+}
+
+message {
+    enabled: true;
+    background-color: transparent;
+    text-color: @fg-muted;
+}
+
+listview {
+    lines: 8;
+    columns: 1;
+    fixed-height: true;
+    spacing: 6px;
+    scrollbar: false;
+    background-color: transparent;
+}
+
+element {
+    padding: 10px;
+    border-radius: 10px;
+    text-color: @fg;
+    background-color: transparent;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    text-color: @urgent;
+}
+
+element selected.normal,
+element selected.active,
+element selected.urgent {
+    background-color: @bg-alt;
+    text-color: @accent;
+}

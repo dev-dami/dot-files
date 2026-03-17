@@ -1,0 +1,11 @@
+configuration {
+    modi: "drun,run";
+    show-icons: true;
+    display-drun: "Apps";
+    font: "SF Pro Display 12";
+}
+
+window {
+    width: 50%;
+    padding: 12px;
+}

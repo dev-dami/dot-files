@@ -1,0 +1,68 @@
+@import "~/.config/rofi/wal-colors.rasi"
+
+* {
+    bg:             #12161ddd;
+    bg-alt:         #1b222ddd;
+    fg:             #d8dee9;
+    fg-muted:       #8d96a5;
+    accent:         #8ca4c4;
+    border:         #344155;
+    background-color: transparent;
+    text-color: @fg;
+    font: "JetBrainsMono Nerd Font 12";
+}
+
+window {
+    transparency: "real";
+    location: center;
+    anchor: center;
+    width: 28%;
+    border: 2px;
+    border-radius: 14px;
+    border-color: @border;
+    background-color: @bg;
+    padding: 18px;
+}
+
+mainbox {
+    spacing: 12px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    children: [ prompt ];
+    spacing: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background-color: @bg-alt;
+}
+
+prompt {
+    str: "power";
+    text-color: @accent;
+}
+
+listview {
+    lines: 5;
+    columns: 1;
+    fixed-height: true;
+    dynamic: false;
+    cycle: false;
+    scrollbar: false;
+    spacing: 6px;
+    background-color: transparent;
+}
+
+element {
+    padding: 11px 12px;
+    border-radius: 10px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected.normal,
+element selected.active,
+element selected.urgent {
+    background-color: @bg-alt;
+    text-color: @accent;
+}
