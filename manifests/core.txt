@@ -1,0 +1,13 @@
+editor-zed
+term-kitty
+wm-i3
+wm-i3status
+bar-polybar
+launcher-rofi
+notify-dunst
+compositor-picom
+hotkeys-sxhkd
+tools-btop
+tools-fastfetch
+tools-superrice
+editor-vscode
