@@ -1,0 +1,23 @@
+packages/term-kitty/.config/kitty/kitty.conf
+  96f39de480ccac14 43-56,60-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "a5ba14154386d8164a3d5b93a52b3df3806bb19b",
+  "prompts": {
+    "96f39de480ccac14": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-b5aca95a-73d1-49d5-9816-a112b0e74c34",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 29,
+      "total_deletions": 1,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    }
+  }
+}
