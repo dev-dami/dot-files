@@ -1,0 +1,36 @@
+packages/term-zellij/.config/zellij/layouts/default.kdl
+  554852d7d72f28c8 1-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "334120b41eb135f19dba24e5f60311a40e133e90",
+  "prompts": {
+    "554852d7d72f28c8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-f0460616-714f-4016-95ce-65c2ecdc4289",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 195,
+      "overriden_lines": 0
+    },
+    "e6aa70f81f7d8c52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-335a52fb-63bb-4c45-9401-46cf8b8eaf64",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
