@@ -3,6 +3,7 @@ term-kitty
 term-alacritty
 term-tmux
 term-zellij
+prompt-starship
 wm-i3
 wm-i3status
 bar-polybar
