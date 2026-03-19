@@ -1,0 +1,23 @@
+README.md
+  2668a7c72131d45d 8,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "8ba5835b00faa35240af331d9b54230fb821cb4b",
+  "prompts": {
+    "2668a7c72131d45d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-e119ddb1-b25e-4537-aeeb-09a8239832a3",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 1,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
