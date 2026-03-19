@@ -1,0 +1,41 @@
+[general]
+import = [
+    "~/.config/alacritty/repothemes/themes/rose-pine.toml"
+]
+
+[colors.primary]
+background = "#000000"
+
+[colors]
+draw_bold_text_with_bright_colors = false
+transparent_background_colors = true
+
+[env]
+TERM = "xterm-256color"
+
+[window]
+padding.x = 10
+padding.y = 10
+decorations = "Buttonless"
+opacity = 0.65
+blur = true
+dynamic_padding = true
+
+[mouse]
+hide_when_typing = true
+
+[font]
+size = 16
+
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+
+[keyboard]
+bindings = [
+    { key = "Left",  mods = "Alt",     chars = "\u001bb"   },
+    { key = "Right", mods = "Alt",     chars = "\u001bf"   },
+    { key = "Left",  mods = "Command", chars = "\u001bOH"  },
+    { key = "Right", mods = "Command", chars = "\u001bOF"  },
+    { key = "Back",  mods = "Command", chars = "\u0015"    },
+    { key = "Back",  mods = "Command", chars = "\u0017"    },
+]
