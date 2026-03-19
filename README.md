@@ -5,7 +5,7 @@ Personal configuration files for Linux development environment.
 ## Included Configurations
 
 - **Editor**: Zed, VS Code
-- **Terminal**: Kitty
+- **Terminal**: Kitty, Alacritty, tmux
 - **Window Manager**: i3, i3status, Polybar
 - **Launcher**: Rofi
 - **Notifications**: Dunst
@@ -22,6 +22,8 @@ dotfiles/
 ├── packages/                   # Configuration packages
 │   ├── editor-zed/             # Zed editor config
 │   ├── term-kitty/             # Kitty terminal config
+│   ├── term-alacritty/         # Alacritty terminal config
+│   ├── term-tmux/              # tmux multiplexer config
 │   ├── wm-i3/                  # i3 window manager config
 │   ├── bar-polybar/            # Polybar config
 │   ├── launcher-rofi/          # Rofi launcher config
