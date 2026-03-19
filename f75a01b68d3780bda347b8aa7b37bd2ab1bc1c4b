@@ -1,0 +1,53 @@
+packages/term-kitty/.config/kitty/kitty.conf
+  0d7b405a1509b751 43-44,48-50,55
+packages/term-zellij/.config/zellij/config.kdl
+  e87e8af5b6c727e6 1-185
+manifests/core.txt
+  3c79b4138adfd835 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "f75a01b68d3780bda347b8aa7b37bd2ab1bc1c4b",
+  "prompts": {
+    "0d7b405a1509b751": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-69feb0e3-3410-4246-a371-8cfd903787b5",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 5,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    },
+    "3c79b4138adfd835": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-9e05a711-30a0-4876-aca3-c359493cd12b",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "e87e8af5b6c727e6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-cdefdbac-ac20-482b-b777-f87ab48692bb",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 185,
+      "total_deletions": 0,
+      "accepted_lines": 185,
+      "overriden_lines": 0
+    }
+  }
+}
