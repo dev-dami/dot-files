@@ -1,0 +1,23 @@
+manifests/core.txt
+  139d08729d89ccf7 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "9d4c988466688e2e46bdee7d418c75346753e60e",
+  "prompts": {
+    "139d08729d89ccf7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-5c42d1cb-689f-4e56-9038-44d30b053075",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
