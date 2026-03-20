@@ -1,0 +1,23 @@
+packages/term-tmux/.tmux.conf
+  c01ce09e7d634c81 1,45,49-55,58-61,69,71,73-74,77,79-85,87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "55e0784374c6d3153f468ee68b8e5eb1cc58038b",
+  "prompts": {
+    "c01ce09e7d634c81": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_30304e41fffeNWrJqsqlAArLLv-f61317d1-3ac4-40d8-98cb-0be226abc085",
+        "model": "unknown"
+      },
+      "human_author": "dev-dami <damiade5banjo@gmail.com>",
+      "messages": [],
+      "total_additions": 28,
+      "total_deletions": 29,
+      "accepted_lines": 28,
+      "overriden_lines": 0
+    }
+  }
+}
